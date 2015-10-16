@@ -236,12 +236,7 @@ var GithubRepo = (function () {
         key: "createCommit",
         value: function createCommit(parent, tree, message) {
             return __awaiter(this, void 0, Promise, function* () {
-                var resp = yield this.postJSON("/git/commits", {
-                    message: message,
-                    parents: [parent],
-                    tree: tree
-                });
-                return resp;
+                return yield this.postJSON("/git/commits", { message: message, parents: [parent], tree: tree });
             });
         }
     }, {
@@ -266,138 +261,158 @@ var GithubRepo = (function () {
 })();
 
 var repo = new GithubRepo(repoName, localStorage.getItem("accessToken"));
-function getAllowUploadURL() {
-    return __awaiter(this, void 0, Promise, function* () {
-        var info = yield encrypt(hexToArr(repo.access_token));
-        location.hash = "#allowupload!" + base64.encode(info.data.buffer, true, false) + "!" + info.key;
-    });
-}
-function encrypt(data) {
-    return __awaiter(this, void 0, Promise, function* () {
-        //const iv:number[] = sjcl.random.randomWords(4, 0);
-        //sjcl.arrayBuffer.ccm.encrypt(new sjcl.cipher.aes(key), data, iv);
-        //crypto.subtle.encrypt({name: "AES-CBC", iv: iv}, key, new Uint8Array(data));
-        var key = yield crypto.subtle.generateKey({ name: 'AES-CBC', length: 128 }, true, ["encrypt"]);
-        var iv = new Uint8Array(16);
-        // crypto.getRandomValues(iv);
-        // not necessary because every key is only used once
-        var key_arr = yield crypto.subtle.exportKey("raw", key);
-        console.log(key_arr.byteLength);
-        return {
-            data: new Uint8Array((yield crypto.subtle.encrypt({ name: "AES-CBC", iv: iv }, key, data))),
-            key: base64.encode(key_arr, true, false),
-            key_arr: key_arr,
-            iv: iv
-        };
-    });
-}
-function decrypt(data, key_str, iv) {
-    return __awaiter(this, void 0, Promise, function* () {
-        var key = yield crypto.subtle.importKey("raw", new Uint8Array(base64.decode(key_str, true)), "AES-CBC", false, ["decrypt"]);
-        return yield crypto.subtle.decrypt({ name: "AES-CBC", iv: iv }, key, data);
-    });
-}
-function uploadEncrypted(inputData) {
-    return __awaiter(this, void 0, Promise, function* () {
-        var filename = base64.encode(crypto.getRandomValues(new Uint8Array(16)).buffer, true, false);
+var SimpleCrypto;
+(function (SimpleCrypto) {
+    function encrypt(data) {
+        return __awaiter(this, void 0, Promise, function* () {
+            var key = yield crypto.subtle.generateKey({ name: 'AES-CBC', length: 128 }, true, ["encrypt"]);
+            var iv = new Uint8Array(16);
+            // crypto.getRandomValues(iv);
+            // not necessary because every key is only used once
+            var key_arr = yield crypto.subtle.exportKey("raw", key);
+            console.log(key_arr.byteLength);
+            return {
+                data: new Uint8Array((yield crypto.subtle.encrypt({ name: "AES-CBC", iv: iv }, key, data))),
+                key: base64.encode(key_arr, true, false),
+                key_arr: key_arr,
+                iv: iv
+            };
+        });
+    }
+    SimpleCrypto.encrypt = encrypt;
+    function decrypt(data, key_str, iv) {
+        return __awaiter(this, void 0, Promise, function* () {
+            var key = yield crypto.subtle.importKey("raw", new Uint8Array(base64.decode(key_str, true)), "AES-CBC", false, ["decrypt"]);
+            return yield crypto.subtle.decrypt({ name: "AES-CBC", iv: iv }, key, data);
+        });
+    }
+    SimpleCrypto.decrypt = decrypt;
+})(SimpleCrypto || (SimpleCrypto = {}));
+var Upload;
+(function (Upload) {
+    function getAllowUploadURL() {
+        return __awaiter(this, void 0, Promise, function* () {
+            var info = yield SimpleCrypto.encrypt(Util.hexToArr(repo.access_token));
+            location.hash = "#allowupload!" + base64.encode(info.data.buffer, true, false) + "!" + info.key;
+        });
+    }
+    Upload.getAllowUploadURL = getAllowUploadURL;
+    function uploadEncrypted(inputData) {
+        return __awaiter(this, void 0, Promise, function* () {
+            var filename = base64.encode(crypto.getRandomValues(new Uint8Array(16)).buffer, true, false);
 
-        var _ref = yield encrypt(inputData);
+            var _ref = yield SimpleCrypto.encrypt(inputData);
 
-        var key = _ref.key;
-        var iv = _ref.iv;
-        var data = _ref.data;
+            var key = _ref.key;
+            var iv = _ref.iv;
+            var data = _ref.data;
 
-        return { key: key, iv: iv, sha: yield repo.pushFileToMaster(filename, data) };
-    });
-}
-function displayImage(data) {
-    var img = document.createElement("img");
-    var magic = new Uint16Array(data, 0, 1)[0];
-    var file = new Blob([data], { type: magic == 0xFFD8 ? 'image/jpeg' : 'image/png' });
-    var url = URL.createObjectURL(file);
-    img.src = url;
-    document.body.innerHTML = "";
-    document.body.appendChild(img);
-}
-function download(sha, key) {
-    return __awaiter(this, void 0, Promise, function* () {
-        sha = arrToHex(new Uint8Array(base64.decode(sha)));
-        displayImage((yield decrypt(new Uint8Array((yield repo.getBlob(sha))), key, new Uint8Array(16))));
-    });
-}
-if (location.hash) {
-    if (location.hash.startsWith("#allowupload!")) {
-        var _location$hash$substr$split = location.hash.substr(1).split("!");
+            return { key: key, iv: iv, sha: yield repo.pushFileToMaster(filename, data) };
+        });
+    }
+    Upload.uploadEncrypted = uploadEncrypted;
+    function download(sha, key) {
+        return __awaiter(this, void 0, Promise, function* () {
+            sha = Util.arrToHex(new Uint8Array(base64.decode(sha)));
+            return yield SimpleCrypto.decrypt(new Uint8Array((yield repo.getBlob(sha))), key, new Uint8Array(16));
+        });
+    }
+    Upload.download = download;
+    function uploadFile(evt) {
+        return __awaiter(this, void 0, Promise, function* () {
+            try {
+                document.body.textContent = "Uploading...";
+                var f = evt.target.files[0];
+                if (f) {
+                    var data = new Uint8Array((yield readFile(f)));
+                    var info = yield uploadEncrypted(data);
+                    var sha = base64.encode(Util.hexToArr(info.sha).buffer, true, false);
+                    history.replaceState({}, "", "#" + sha + "!" + info.key);
+                    return data.buffer;
+                } else throw "no image selected";
+            } catch (e) {
+                document.body.textContent = JSON.stringify(e);
+                throw e;
+            }
+        });
+    }
+    Upload.uploadFile = uploadFile;
+    function readFile(f) {
+        return __awaiter(this, void 0, Promise, function* () {
+            return new Promise(function (resolve, reject) {
+                var r = new FileReader();
+                r.onload = function (e) {
+                    return resolve(r.result);
+                };
+                r.readAsArrayBuffer(f);
+            });
+        });
+    }
+    Upload.readFile = readFile;
+})(Upload || (Upload = {}));
+var Util;
+(function (Util) {
+    function hexToArr(hex) {
+        var out = new Uint8Array(hex.length / 2);
+        for (var i = 0; i < hex.length; i += 2) {
+            out[i / 2] = parseInt(hex.substr(i, 2), 16);
+        }
+        return out;
+    }
+    Util.hexToArr = hexToArr;
+    function arrToHex(arr) {
+        var out = "";
+        for (var byte of arr) {
+            out += byte < 16 ? "0" + byte.toString(16) : byte.toString(16);
+        }return out;
+    }
+    Util.arrToHex = arrToHex;
+})(Util || (Util = {}));
+var GUI;
+(function (GUI) {
+    function displayImage(data) {
+        var img = document.createElement("img");
+        var magic = new Uint16Array(data, 0, 1)[0];
+        var file = new Blob([data], { type: magic == 0xFFD8 ? 'image/jpeg' : 'image/png' });
+        var url = URL.createObjectURL(file);
+        img.src = url;
+        document.body.innerHTML = "";
+        document.body.appendChild(img);
+    }
+    if (location.hash) {
+        if (location.hash.startsWith("#allowupload!")) {
+            var _location$hash$substr$split = location.hash.substr(1).split("!");
 
-        var _location$hash$substr$split2 = _slicedToArray(_location$hash$substr$split, 3);
+            var _location$hash$substr$split2 = _slicedToArray(_location$hash$substr$split, 3);
 
-        var crypt = _location$hash$substr$split2[1];
-        var key = _location$hash$substr$split2[2];
+            var crypt = _location$hash$substr$split2[1];
+            var key = _location$hash$substr$split2[2];
 
-        decrypt(new Uint8Array(base64.decode(crypt, true)), key, new Uint8Array(16)).then(function (token) {
-            localStorage.setItem("accessToken", arrToHex(new Uint8Array(token)));
-            location.hash = "";
-            location.reload();
+            SimpleCrypto.decrypt(new Uint8Array(base64.decode(crypt, true)), key, new Uint8Array(16)).then(function (token) {
+                localStorage.setItem("accessToken", Util.arrToHex(new Uint8Array(token)));
+                location.hash = "";
+                location.reload();
+            });
+        } else {
+            var _location$hash$substr$split3 = location.hash.substr(1).split("!");
+
+            var _location$hash$substr$split32 = _slicedToArray(_location$hash$substr$split3, 2);
+
+            var filename = _location$hash$substr$split32[0];
+            var key = _location$hash$substr$split32[1];
+
+            document.writeln("Loading...<!--");
+            Upload.download(filename, key).then(displayImage);
+        }
+    } else if (repo.access_token) {
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById("fileinput").addEventListener('change', function (e) {
+                Upload.uploadFile(e).then(displayImage);
+            }, false);
         });
     } else {
-        var _location$hash$substr$split3 = location.hash.substr(1).split("!");
-
-        var _location$hash$substr$split32 = _slicedToArray(_location$hash$substr$split3, 2);
-
-        var filename = _location$hash$substr$split32[0];
-        var key = _location$hash$substr$split32[1];
-
-        document.writeln("Loading...<!--");
-        download(filename, key);
+        document.writeln("No image given and upload key missing<!--");
     }
-} else if (repo.access_token) {
-    document.addEventListener('DOMContentLoaded', function () {
-        document.getElementById("fileinput").addEventListener('change', uploadFile, false);
-    });
-} else {
-    document.writeln("No image given and upload key missing<!--");
-}
-function hexToArr(hex) {
-    var out = new Uint8Array(hex.length / 2);
-    for (var i = 0; i < hex.length; i += 2) {
-        out[i / 2] = parseInt(hex.substr(i, 2), 16);
-    }
-    return out;
-}
-function arrToHex(arr) {
-    var out = "";
-    for (var byte of arr) {
-        out += byte < 16 ? "0" + byte.toString(16) : byte.toString(16);
-    }return out;
-}
-function uploadFile(evt) {
-    return __awaiter(this, void 0, Promise, function* () {
-        try {
-            document.body.textContent = "Uploading...";
-            var f = evt.target.files[0];
-            if (f) {
-                var data = new Uint8Array((yield readFile(f)));
-                var info = yield uploadEncrypted(data);
-                var sha = base64.encode(hexToArr(info.sha).buffer, true, false);
-                history.replaceState({}, "", "#" + sha + "!" + info.key);
-                displayImage(data.buffer);
-            }
-        } catch (e) {
-            document.body.textContent = JSON.stringify(e);
-            throw e;
-        }
-    });
-}
-function readFile(f) {
-    return __awaiter(this, void 0, Promise, function* () {
-        return new Promise(function (resolve, reject) {
-            var r = new FileReader();
-            r.onload = function (e) {
-                return resolve(r.result);
-            };
-            r.readAsArrayBuffer(f);
-        });
-    });
-}
+})(GUI || (GUI = {}));
 //# sourceMappingURL=tmp.js.map
 //# sourceMappingURL=bin.js.map
