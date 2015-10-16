@@ -1,0 +1,9 @@
+{
+	"compilerOptions": {
+			
+	},
+	"files": [
+		"typings/sjcl/sjcl.d.ts",
+		"main.ts"
+	]
+}
