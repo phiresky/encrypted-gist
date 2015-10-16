@@ -1,9 +1,13 @@
 {
 	"compilerOptions": {
-			
+		"experimentalAsyncFunctions": true,
+		"target": "ES6",
+		"sourceMap": true,
+		"out": "bin/tmp.js"
 	},
 	"files": [
-		"typings/sjcl/sjcl.d.ts",
-		"main.ts"
+		"typings/tsd.d.ts",
+		"src/base64.ts",
+		"src/main.ts"
 	]
 }
