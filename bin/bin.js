@@ -11,14 +11,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 var base64;
 (function (base64_1) {
     base64_1._chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    base64_1._chars_url = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
     base64_1.encode = function (arraybuffer, url, equals) {
-        var chars = base64_1._chars;
-        if (url) chars = chars.substr(0, 62) + '-_';
+        var chars = url ? base64_1._chars_url : base64_1._chars;
         var bytes = new Uint8Array(arraybuffer),
-            i,
             len = bytes.length,
             base64 = "";
-        for (i = 0; i < len; i += 3) {
+        for (var i = 0; i < len; i += 3) {
             base64 += chars[bytes[i] >> 2];
             base64 += chars[(bytes[i] & 3) << 4 | bytes[i + 1] >> 4];
             base64 += chars[(bytes[i + 1] & 15) << 2 | bytes[i + 2] >> 6];
@@ -32,8 +31,7 @@ var base64;
         return base64;
     };
     base64_1.decode = function (base64, url) {
-        var chars = base64_1._chars;
-        if (url) chars = chars.substr(0, 62) + '-_';
+        var chars = url ? base64_1._chars_url : base64_1._chars;
         var bufferLength = base64.length * 0.75,
             len = base64.length,
             i,
@@ -91,8 +89,6 @@ var __awaiter = undefined && undefined.__awaiter || function (thisArg, _argument
         step("next", void 0);
     });
 };
-var repoName = "phire-store/testing";
-var branch = 'master';
 
 var Github = (function () {
     function Github() {
@@ -164,11 +160,7 @@ var Github = (function () {
             return __awaiter(this, void 0, Promise, function* () {
                 var headers = new Headers();
                 headers.append("Content-Type", "application/json;charset=UTF-8");
-                return yield this.fetchJSON(path, {
-                    method: method,
-                    headers: headers,
-                    body: JSON.stringify(data)
-                }, authenticate);
+                return yield this.fetchJSON(path, { method: method, headers: headers, body: JSON.stringify(data) }, authenticate);
             });
         }
     }, {
@@ -178,10 +170,7 @@ var Github = (function () {
             var authenticate = arguments.length <= 3 || arguments[3] === undefined ? false : arguments[3];
 
             return __awaiter(this, void 0, Promise, function* () {
-                return yield this.postJSON("gists", {
-                    description: description, "public": is_public,
-                    files: files
-                }, "POST", authenticate);
+                return yield this.postJSON("gists", { description: description, "public": is_public, files: files }, "POST", authenticate);
             });
         }
     }, {
@@ -251,8 +240,7 @@ var GithubRepo = (function () {
         value: function createBlob(data) {
             return __awaiter(this, void 0, Promise, function* () {
                 var resp = yield this.github.postJSON(this.repo + "/git/blobs", {
-                    encoding: "base64",
-                    content: base64.encode(data, false, true)
+                    encoding: "base64", content: base64.encode(data, false, true)
                 });
                 return resp.sha;
             });
@@ -269,8 +257,7 @@ var GithubRepo = (function () {
         value: function createTree(base_tree, path, sha) {
             return __awaiter(this, void 0, Promise, function* () {
                 var resp = yield this.github.postJSON(this.repo + "/git/trees", {
-                    base_tree: base_tree,
-                    tree: [{ path: path, mode: "100644", type: "blob", sha: sha }]
+                    base_tree: base_tree, tree: [{ path: path, mode: "100644", type: "blob", sha: sha }]
                 });
                 return resp;
             });
@@ -303,6 +290,7 @@ var GithubRepo = (function () {
     return GithubRepo;
 })();
 
+var repoName = null; // "phire-store/testing";
 var github = new Github(localStorage.getItem("accessToken"));
 var repo = github.getRepo(repoName);
 var SimpleCrypto;
@@ -311,14 +299,12 @@ var SimpleCrypto;
         return __awaiter(this, void 0, Promise, function* () {
             var key = yield crypto.subtle.generateKey({ name: 'AES-CBC', length: 128 }, true, ["encrypt"]);
             var iv = new Uint8Array(16);
-            // crypto.getRandomValues(iv);
             // IV randomness not necessary because every key is only used once
+            // crypto.getRandomValues(iv);
             var key_arr = yield crypto.subtle.exportKey("raw", key);
             return {
                 data: new Uint8Array((yield crypto.subtle.encrypt({ name: "AES-CBC", iv: iv }, key, data))),
-                key: base64.encode(key_arr, true, false),
-                key_arr: key_arr,
-                iv: iv
+                key: base64.encode(key_arr, true, false), iv: iv
             };
         });
     }
@@ -333,16 +319,21 @@ var SimpleCrypto;
 })(SimpleCrypto || (SimpleCrypto = {}));
 var Upload;
 (function (Upload) {
-    var uploadMethod =
-    //(f, d) => repo.pushFileToMaster(f, d, "add");
-    function uploadMethod(f, d) {
+    var gistUploadMethod = function gistUploadMethod(f, d) {
         return __awaiter(this, void 0, Promise, function* () {
+            if (d.byteLength >= 1000 * 3 / 4 * 1000) console.warn("Image should be < 700 kB to avoid calling api twice");
+            if (d.byteLength >= 2e6) throw "Image must be < 2 MB";
             return (yield github.createGist(Util.randomString(0, 10), _defineProperty({}, f, { content: base64.encode(d.buffer, true, false) }))).id;
         });
     };
-    var downloadMethod =
-    //(sha) => repo.getBlob(sha);
-    function downloadMethod(sha) {
+    var repoUploadMethod = function repoUploadMethod(f, d) {
+        return repo.pushFileToMaster(f, d, "add");
+    };
+    var uploadMethod = repoName ? repoUploadMethod : gistUploadMethod;
+    var downloadMethod = undefined;
+    if (repoName) downloadMethod = function (sha) {
+        return repo.getBlob(sha);
+    };else downloadMethod = function (sha) {
         return __awaiter(this, void 0, Promise, function* () {
             var gist = yield github.getGist(sha);
             var file = gist.files[Object.keys(gist.files)[0]];
@@ -436,30 +427,6 @@ var Util;
         }return out;
     }
     Util.arrToHex = arrToHex;
-    var WebP = undefined;
-    function supportsWebP() {
-        return __awaiter(this, void 0, Promise, function* () {
-            return new Promise(function (resolve, reject) {
-                if (WebP) resolve(WebP.height === 2);else {
-                    WebP = new Image();
-                    WebP.src = 'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA';
-                    WebP.onload = WebP.onerror = function () {
-                        return resolve(WebP.height === 2);
-                    };
-                }
-            });
-        });
-    }
-    Util.supportsWebP = supportsWebP;
-    function decodeWebP(buf) {
-        var decoder = new WebPDecoder();
-        var width = { value: 0 },
-            height = { value: 0 };
-        var data = new Uint8Array(buf);
-        var bitmap = decoder.WebPDecodeRGBA(data, data.length, width, height);
-        return { bitmap: bitmap, width: width.value, height: height.value };
-    }
-    Util.decodeWebP = decodeWebP;
 })(Util || (Util = {}));
 var GUI;
 (function (GUI) {
@@ -469,37 +436,11 @@ var GUI;
             var magic = new DataView(data, 0, 2).getInt16(0, false);
             var mime = magics[magic];
             console.log("displaying " + data.byteLength / 1000 + "kByte mime=" + (mime || "unknown: 0x" + magic.toString(16)) + " image");
-            var file = undefined;
-            if (mime === "image/webp" && !(yield Util.supportsWebP())) {
-                console.log("decoding WebP", data);
-                window._d = data;
-
-                var _Util$decodeWebP = Util.decodeWebP(data);
-
-                var bitmap = _Util$decodeWebP.bitmap;
-                var width = _Util$decodeWebP.width;
-                var height = _Util$decodeWebP.height;
-
-                bitmap.pop();
-                var canvas = document.createElement("canvas");
-                canvas.width = width;
-                canvas.height = height;
-                var ctx = canvas.getContext('2d');
-                var img = ctx.createImageData(width, height);
-                var imgdata = img.data;
-                console.log(bitmap.length, imgdata.length);
-                imgdata.set(bitmap, 0);
-                ctx.putImageData(img, 0, 0);
-                document.body.innerHTML = "";
-                document.body.appendChild(canvas);
-            } else {
-                var img = document.createElement("img");
-                file = new Blob([data], { type: mime || "image/jpeg" });
-                var url = URL.createObjectURL(file);
-                img.src = url;
-                document.body.innerHTML = "";
-                document.body.appendChild(img);
-            }
+            var file = new Blob([data], { type: mime || "image/jpeg" });
+            var img = document.createElement("img");
+            img.src = URL.createObjectURL(file);
+            document.body.innerHTML = "";
+            document.body.appendChild(img);
         });
     }
     if (location.hash) {
@@ -538,6 +479,4 @@ var GUI;
     }
 })(GUI || (GUI = {}));
 //# sourceMappingURL=tmp.js.map
-//(f, d) => repo.pushFileToMaster(f, d, "add");
-//(sha) => repo.getBlob(sha);
 //# sourceMappingURL=bin.js.map

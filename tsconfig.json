@@ -8,6 +8,7 @@
 	"files": [
 		"typings/tsd.d.ts",
 		"src/base64.ts",
+		"src/github.ts",
 		"src/main.ts"
 	]
 }

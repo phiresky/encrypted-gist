@@ -1,12 +1,11 @@
 module base64 {
 	export const _chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-	export const encode = function(arraybuffer:ArrayBuffer, url: boolean, equals: boolean) {
-		let chars = _chars;
-		if(url) chars = chars.substr(0,62) + '-_';
-		var bytes = new Uint8Array(arraybuffer),
-			i, len = bytes.length, base64 = "";
+	export const _chars_url = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+	export const encode = function(arraybuffer: ArrayBuffer, url: boolean, equals: boolean) {
+		const chars = url ? _chars_url : _chars;
+		var bytes = new Uint8Array(arraybuffer), len = bytes.length, base64 = "";
 
-		for (i = 0; i < len; i += 3) {
+		for (let i = 0; i < len; i += 3) {
 			base64 += chars[bytes[i] >> 2];
 			base64 += chars[((bytes[i] & 3) << 4) | (bytes[i + 1] >> 4)];
 			base64 += chars[((bytes[i + 1] & 15) << 2) | (bytes[i + 2] >> 6)];
@@ -14,17 +13,16 @@ module base64 {
 		}
 
 		if ((len % 3) === 2) {
-			base64 = base64.substring(0, base64.length - 1) + (equals?"=":"");
+			base64 = base64.substring(0, base64.length - 1) + (equals ? "=" : "");
 		} else if (len % 3 === 1) {
-			base64 = base64.substring(0, base64.length - 2) + (equals?"==":"");
+			base64 = base64.substring(0, base64.length - 2) + (equals ? "==" : "");
 		}
 
 		return base64;
 	};
 
-	export const decode = function(base64:string, url: boolean) {
-		let chars = _chars;
-		if(url) chars = chars.substr(0,62) + '-_';
+	export const decode = function(base64: string, url: boolean) {
+		const chars = url ? _chars_url : _chars;
 		var bufferLength = base64.length * 0.75,
 			len = base64.length, i, p = 0,
 			encoded1, encoded2, encoded3, encoded4;
