@@ -8,7 +8,7 @@ https://phiresky.github.io/github-screenshot/
 
 Sample image:
 
-https://phiresky.github.io/github-screenshot/#ger_zhRBx3LWVw!_Y7fyNVmCAsKBww01Wvpmw
+<https://phiresky.github.io/github-screenshot/#ger_zhRBx3LWVw!_Y7fyNVmCAsKBww01Wvpmw>
 
 ---
 
