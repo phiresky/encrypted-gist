@@ -1,6 +1,6 @@
 module base64 {
 	export const _chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-	export const encode = function(arraybuffer:ArrayBuffer, url = false, equals = true) {
+	export const encode = function(arraybuffer:ArrayBuffer, url: boolean, equals: boolean) {
 		let chars = _chars;
 		if(url) chars = chars.substr(0,62) + '-_';
 		var bytes = new Uint8Array(arraybuffer),
@@ -22,7 +22,7 @@ module base64 {
 		return base64;
 	};
 
-	export const decode = function(base64:string, url = false) {
+	export const decode = function(base64:string, url: boolean) {
 		let chars = _chars;
 		if(url) chars = chars.substr(0,62) + '-_';
 		var bufferLength = base64.length * 0.75,

@@ -4,15 +4,14 @@ var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = 
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var base64;
 (function (base64_1) {
     base64_1._chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    base64_1.encode = function (arraybuffer) {
-        var url = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
-        var equals = arguments.length <= 2 || arguments[2] === undefined ? true : arguments[2];
-
+    base64_1.encode = function (arraybuffer, url, equals) {
         var chars = base64_1._chars;
         if (url) chars = chars.substr(0, 62) + '-_';
         var bytes = new Uint8Array(arraybuffer),
@@ -32,9 +31,7 @@ var base64;
         }
         return base64;
     };
-    base64_1.decode = function (base64) {
-        var url = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
-
+    base64_1.decode = function (base64, url) {
         var chars = base64_1._chars;
         if (url) chars = chars.substr(0, 62) + '-_';
         var bufferLength = base64.length * 0.75,
@@ -97,18 +94,23 @@ var __awaiter = undefined && undefined.__awaiter || function (thisArg, _argument
 var repoName = "phire-store/testing";
 var branch = 'master';
 
-var GithubRepo = (function () {
-    function GithubRepo(repo) {
-        var access_token = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
+var Github = (function () {
+    function Github() {
+        var access_token = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
+        var apiUrl = arguments.length <= 1 || arguments[1] === undefined ? "https://api.github.com/" : arguments[1];
 
-        _classCallCheck(this, GithubRepo);
+        _classCallCheck(this, Github);
 
         this.access_token = access_token;
-        this.apiUrl = "";
-        this.apiUrl = "https://api.github.com/repos/" + repo;
+        this.apiUrl = apiUrl;
     }
 
-    _createClass(GithubRepo, [{
+    _createClass(Github, [{
+        key: "getRepo",
+        value: function getRepo(repo) {
+            return new GithubRepo(this, repo);
+        }
+    }, {
         key: "fetch",
         value: (function (_fetch) {
             function fetch(_x, _x2) {
@@ -121,28 +123,35 @@ var GithubRepo = (function () {
 
             return fetch;
         })(function (path, data) {
+            var authenticate = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
+
             return __awaiter(this, void 0, Promise, function* () {
                 if (!data) data = { headers: new Headers() };
+                if (!data.headers) data.headers = new Headers();
                 var h = data.headers;
-                if (this.access_token) h.append("Authorization", "token " + this.access_token);
-                console.log(data);
+                if (authenticate) if (this.access_token) h.append("Authorization", "token " + this.access_token);else throw Error("can't " + data.method + " " + path + " without access token");
+                console.log("fetch", this.apiUrl + path, data);
                 return yield fetch(this.apiUrl + path, data);
             });
         })
     }, {
         key: "fetchJSON",
         value: function fetchJSON(path, data) {
+            var authenticate = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
+
             return __awaiter(this, void 0, Promise, function* () {
-                return yield (yield this.fetch(path, data)).json();
+                return yield (yield this.fetch(path, data, authenticate)).json();
             });
         }
     }, {
         key: "fetchRaw",
         value: function fetchRaw(path, data) {
+            var authenticate = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
+
             return __awaiter(this, void 0, Promise, function* () {
                 var headers = new Headers();
                 headers.append("Accept", "application/vnd.github.v3.raw");
-                var r = yield this.fetch(path, { headers: headers });
+                var r = yield this.fetch(path, { headers: headers }, authenticate);
                 return yield r.arrayBuffer();
             });
         }
@@ -150,6 +159,7 @@ var GithubRepo = (function () {
         key: "postJSON",
         value: function postJSON(path, data) {
             var method = arguments.length <= 2 || arguments[2] === undefined ? "POST" : arguments[2];
+            var authenticate = arguments.length <= 3 || arguments[3] === undefined ? false : arguments[3];
 
             return __awaiter(this, void 0, Promise, function* () {
                 var headers = new Headers();
@@ -158,14 +168,47 @@ var GithubRepo = (function () {
                     method: method,
                     headers: headers,
                     body: JSON.stringify(data)
-                });
+                }, authenticate);
             });
         }
     }, {
+        key: "createGist",
+        value: function createGist(description, files) {
+            var is_public = arguments.length <= 2 || arguments[2] === undefined ? true : arguments[2];
+            var authenticate = arguments.length <= 3 || arguments[3] === undefined ? false : arguments[3];
+
+            return __awaiter(this, void 0, Promise, function* () {
+                return yield this.postJSON("gists", {
+                    description: description, "public": is_public,
+                    files: files
+                }, "POST", authenticate);
+            });
+        }
+    }, {
+        key: "getGist",
+        value: function getGist(id) {
+            return __awaiter(this, void 0, Promise, function* () {
+                return yield this.fetchJSON("gists/" + id);
+            });
+        }
+    }]);
+
+    return Github;
+})();
+
+var GithubRepo = (function () {
+    function GithubRepo(github, repo) {
+        _classCallCheck(this, GithubRepo);
+
+        this.github = github;
+        this.repo = repo;
+    }
+
+    _createClass(GithubRepo, [{
         key: "getRefs",
         value: function getRefs() {
             return __awaiter(this, void 0, Promise, function* () {
-                return yield this.fetchJSON("/git/refs");
+                return yield this.github.fetchJSON(this.repo + "/git/refs");
             });
         }
     }, {
@@ -174,7 +217,7 @@ var GithubRepo = (function () {
             var ref = arguments.length <= 0 || arguments[0] === undefined ? "heads/master" : arguments[0];
 
             return __awaiter(this, void 0, Promise, function* () {
-                return yield this.fetchJSON("/git/refs/" + ref);
+                return yield this.github.fetchJSON(this.repo + "/git/refs/" + ref);
             });
         }
     }, {
@@ -183,7 +226,7 @@ var GithubRepo = (function () {
             var ref = arguments.length <= 1 || arguments[1] === undefined ? "heads/master" : arguments[1];
 
             return __awaiter(this, void 0, Promise, function* () {
-                return yield this.postJSON("/git/refs/" + ref, { sha: sha }, "PATCH");
+                return yield this.github.postJSON(this.repo + "/git/refs/" + ref, { sha: sha }, "PATCH");
             });
         }
     }, {
@@ -200,16 +243,16 @@ var GithubRepo = (function () {
             var recursive = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
 
             return __awaiter(this, void 0, Promise, function* () {
-                return yield this.fetchJSON("/git/trees/" + sha + (recursive ? "?recursive=1" : ""));
+                return yield this.github.fetchJSON(this.repo + "/git/trees/" + sha + (recursive ? "?recursive=1" : ""));
             });
         }
     }, {
         key: "createBlob",
         value: function createBlob(data) {
             return __awaiter(this, void 0, Promise, function* () {
-                var resp = yield this.postJSON("/git/blobs", {
+                var resp = yield this.github.postJSON(this.repo + "/git/blobs", {
                     encoding: "base64",
-                    content: base64.encode(data)
+                    content: base64.encode(data, false, true)
                 });
                 return resp.sha;
             });
@@ -218,14 +261,14 @@ var GithubRepo = (function () {
         key: "getBlob",
         value: function getBlob(sha) {
             return __awaiter(this, void 0, Promise, function* () {
-                return yield this.fetchRaw("/git/blobs/" + sha);
+                return yield this.github.fetchRaw(this.repo + "/git/blobs/" + sha);
             });
         }
     }, {
         key: "createTree",
         value: function createTree(base_tree, path, sha) {
             return __awaiter(this, void 0, Promise, function* () {
-                var resp = yield this.postJSON("/git/trees", {
+                var resp = yield this.github.postJSON(this.repo + "/git/trees", {
                     base_tree: base_tree,
                     tree: [{ path: path, mode: "100644", type: "blob", sha: sha }]
                 });
@@ -236,12 +279,12 @@ var GithubRepo = (function () {
         key: "createCommit",
         value: function createCommit(parent, tree, message) {
             return __awaiter(this, void 0, Promise, function* () {
-                return yield this.postJSON("/git/commits", { message: message, parents: [parent], tree: tree });
+                return yield this.github.postJSON(this.repo + "/git/commits", { message: message, parents: [parent], tree: tree });
             });
         }
     }, {
         key: "pushFileToMaster",
-        value: function pushFileToMaster(path, content) {
+        value: function pushFileToMaster(path, content, commitMessage) {
             return __awaiter(this, void 0, Promise, function* () {
                 var head = yield this.getHead();
                 var newtree = yield this.createTree(head, path, (yield this.createBlob(content.buffer)));
@@ -250,7 +293,7 @@ var GithubRepo = (function () {
                 var filesha = files.filter(function (file) {
                     return file.path == path;
                 })[0].sha;
-                var commit = yield this.createCommit(head, newsha, "testiiing");
+                var commit = yield this.createCommit(head, newsha, commitMessage);
                 yield this.updateRef(commit.sha);
                 return filesha;
             });
@@ -260,7 +303,8 @@ var GithubRepo = (function () {
     return GithubRepo;
 })();
 
-var repo = new GithubRepo(repoName, localStorage.getItem("accessToken"));
+var github = new Github(localStorage.getItem("accessToken"));
+var repo = github.getRepo(repoName);
 var SimpleCrypto;
 (function (SimpleCrypto) {
     function encrypt(data) {
@@ -268,9 +312,8 @@ var SimpleCrypto;
             var key = yield crypto.subtle.generateKey({ name: 'AES-CBC', length: 128 }, true, ["encrypt"]);
             var iv = new Uint8Array(16);
             // crypto.getRandomValues(iv);
-            // not necessary because every key is only used once
+            // IV randomness not necessary because every key is only used once
             var key_arr = yield crypto.subtle.exportKey("raw", key);
-            console.log(key_arr.byteLength);
             return {
                 data: new Uint8Array((yield crypto.subtle.encrypt({ name: "AES-CBC", iv: iv }, key, data))),
                 key: base64.encode(key_arr, true, false),
@@ -290,16 +333,34 @@ var SimpleCrypto;
 })(SimpleCrypto || (SimpleCrypto = {}));
 var Upload;
 (function (Upload) {
+    var uploadMethod =
+    //(f, d) => repo.pushFileToMaster(f, d, "add");
+    function uploadMethod(f, d) {
+        return __awaiter(this, void 0, Promise, function* () {
+            return (yield github.createGist(Util.randomString(0, 10), _defineProperty({}, f, { content: base64.encode(d.buffer, true, false) }))).id;
+        });
+    };
+    var downloadMethod =
+    //(sha) => repo.getBlob(sha);
+    function downloadMethod(sha) {
+        return __awaiter(this, void 0, Promise, function* () {
+            var gist = yield github.getGist(sha);
+            var file = gist.files[Object.keys(gist.files)[0]];
+            if (file.truncated) {
+                return base64.decode((yield (yield fetch(file.raw_url)).text()), true);
+            } else return base64.decode(file.content, true);
+        });
+    };
     function getAllowUploadURL() {
         return __awaiter(this, void 0, Promise, function* () {
-            var info = yield SimpleCrypto.encrypt(Util.hexToArr(repo.access_token));
+            var info = yield SimpleCrypto.encrypt(Util.hexToArr(github.access_token));
             location.hash = "#allowupload!" + base64.encode(info.data.buffer, true, false) + "!" + info.key;
         });
     }
     Upload.getAllowUploadURL = getAllowUploadURL;
     function uploadEncrypted(inputData) {
         return __awaiter(this, void 0, Promise, function* () {
-            var filename = base64.encode(crypto.getRandomValues(new Uint8Array(16)).buffer, true, false);
+            var filename = Util.randomString(1, 16);
 
             var _ref = yield SimpleCrypto.encrypt(inputData);
 
@@ -307,17 +368,17 @@ var Upload;
             var iv = _ref.iv;
             var data = _ref.data;
 
-            return { key: key, iv: iv, sha: yield repo.pushFileToMaster(filename, data) };
+            return { key: key, iv: iv, sha: yield uploadMethod(filename, data) };
         });
     }
     Upload.uploadEncrypted = uploadEncrypted;
-    function download(sha, key) {
+    function downloadFile(sha, key) {
         return __awaiter(this, void 0, Promise, function* () {
-            sha = Util.arrToHex(new Uint8Array(base64.decode(sha)));
-            return yield SimpleCrypto.decrypt(new Uint8Array((yield repo.getBlob(sha))), key, new Uint8Array(16));
+            sha = Util.arrToHex(new Uint8Array(base64.decode(sha, true)));
+            return yield SimpleCrypto.decrypt(new Uint8Array((yield downloadMethod(sha))), key, new Uint8Array(16));
         });
     }
-    Upload.download = download;
+    Upload.downloadFile = downloadFile;
     function uploadFile(evt) {
         return __awaiter(this, void 0, Promise, function* () {
             try {
@@ -352,6 +413,14 @@ var Upload;
 })(Upload || (Upload = {}));
 var Util;
 (function (Util) {
+    function randomString(minlength) {
+        var maxlength = arguments.length <= 1 || arguments[1] === undefined ? minlength : arguments[1];
+        return (function () {
+            var length = Math.random() * (maxlength + 1 - minlength) + minlength | 0;
+            return base64.encode(crypto.getRandomValues(new Uint8Array(length * 3 / 4 + 2)).buffer, true, false).substr(0, length);
+        })();
+    }
+    Util.randomString = randomString;
     function hexToArr(hex) {
         var out = new Uint8Array(hex.length / 2);
         for (var i = 0; i < hex.length; i += 2) {
@@ -367,19 +436,71 @@ var Util;
         }return out;
     }
     Util.arrToHex = arrToHex;
+    var WebP = undefined;
+    function supportsWebP() {
+        return __awaiter(this, void 0, Promise, function* () {
+            return new Promise(function (resolve, reject) {
+                if (WebP) resolve(WebP.height === 2);else {
+                    WebP = new Image();
+                    WebP.src = 'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA';
+                    WebP.onload = WebP.onerror = function () {
+                        return resolve(WebP.height === 2);
+                    };
+                }
+            });
+        });
+    }
+    Util.supportsWebP = supportsWebP;
+    function decodeWebP(buf) {
+        var decoder = new WebPDecoder();
+        var width = { value: 0 },
+            height = { value: 0 };
+        var data = new Uint8Array(buf);
+        var bitmap = decoder.WebPDecodeRGBA(data, data.length, width, height);
+        return { bitmap: bitmap, width: width.value, height: height.value };
+    }
+    Util.decodeWebP = decodeWebP;
 })(Util || (Util = {}));
 var GUI;
 (function (GUI) {
     var magics = { 0xFFD8: 'image/jpeg', 0x5249: 'image/webp', 0x8950: 'image/png' };
     function displayImage(data) {
-        var img = document.createElement("img");
-        var magic = new DataView(data, 0, 2).getInt16(0, false);
-        console.log("displaying " + data.byteLength / 1000 + "kByte mime=" + (magics[magic] || "unknown: 0x" + magic.toString(16)) + " image");
-        var file = new Blob([data], { type: magics[magic] || 'image/jpeg' });
-        var url = URL.createObjectURL(file);
-        img.src = url;
-        document.body.innerHTML = "";
-        document.body.appendChild(img);
+        return __awaiter(this, void 0, Promise, function* () {
+            var magic = new DataView(data, 0, 2).getInt16(0, false);
+            var mime = magics[magic];
+            console.log("displaying " + data.byteLength / 1000 + "kByte mime=" + (mime || "unknown: 0x" + magic.toString(16)) + " image");
+            var file = undefined;
+            if (mime === "image/webp" && !(yield Util.supportsWebP())) {
+                console.log("decoding WebP", data);
+                window._d = data;
+
+                var _Util$decodeWebP = Util.decodeWebP(data);
+
+                var bitmap = _Util$decodeWebP.bitmap;
+                var width = _Util$decodeWebP.width;
+                var height = _Util$decodeWebP.height;
+
+                bitmap.pop();
+                var canvas = document.createElement("canvas");
+                canvas.width = width;
+                canvas.height = height;
+                var ctx = canvas.getContext('2d');
+                var img = ctx.createImageData(width, height);
+                var imgdata = img.data;
+                console.log(bitmap.length, imgdata.length);
+                imgdata.set(bitmap, 0);
+                ctx.putImageData(img, 0, 0);
+                document.body.innerHTML = "";
+                document.body.appendChild(canvas);
+            } else {
+                var img = document.createElement("img");
+                file = new Blob([data], { type: mime || "image/jpeg" });
+                var url = URL.createObjectURL(file);
+                img.src = url;
+                document.body.innerHTML = "";
+                document.body.appendChild(img);
+            }
+        });
     }
     if (location.hash) {
         if (location.hash.startsWith("#allowupload!")) {
@@ -404,9 +525,9 @@ var GUI;
             var key = _location$hash$substr$split32[1];
 
             document.writeln("Loading...<!--");
-            Upload.download(filename, key).then(displayImage);
+            Upload.downloadFile(filename, key).then(displayImage);
         }
-    } else if (repo.access_token) {
+    } else if (github.access_token) {
         document.addEventListener('DOMContentLoaded', function () {
             document.getElementById("fileinput").addEventListener('change', function (e) {
                 Upload.uploadFile(e).then(displayImage);
@@ -417,4 +538,6 @@ var GUI;
     }
 })(GUI || (GUI = {}));
 //# sourceMappingURL=tmp.js.map
+//(f, d) => repo.pushFileToMaster(f, d, "add");
+//(sha) => repo.getBlob(sha);
 //# sourceMappingURL=bin.js.map
