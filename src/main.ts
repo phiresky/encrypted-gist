@@ -1,6 +1,6 @@
 const repoName = null; // "phire-store/testing";
 
-let github = new Github(localStorage.getItem("accessToken"));
+let github = new Github(typeof localStorage != "undefined" && localStorage.getItem("accessToken"));
 let repo = github.getRepo(repoName);
 
 module SimpleCrypto {
@@ -110,8 +110,27 @@ module GUI {
 		document.body.innerHTML = "";
 		document.body.appendChild(img);
 	}
+	declare var process, require;
+	if (typeof process !== "undefined") {
+		// running from node
+		const args = process.argv.slice(2);
+		if (args.length !== 1) {
+			console.log("usage: node " + process.argv[1] + " [filename to upload]");
+			process.exit(1);
+		} else {
+			console.log("uploading");
+			async function nodeUpload() {
+				const fs = require('fs');
+				if (!fs.existsSync(args[0])) throw args[0] + " does not exist";
+				const data = new Uint8Array(fs.readFileSync(args[0]));
+				const info = await Upload.uploadEncrypted(data);
+				const sha = base64.encode(Util.hexToArr(info.sha).buffer, true, false);
+				return "[url]" + "#" + sha + "!" + info.key;
+			}
+			nodeUpload().then(s => console.log(s));
+		}
 
-	if (location.hash) {
+	} else if (location.hash) {
 		if (location.hash.startsWith("#allowupload!")) {
 			const [, crypt, key] = location.hash.substr(1).split("!");
 			SimpleCrypto.decrypt(new Uint8Array(base64.decode(crypt, true)), key, new Uint8Array(16)).then(token => {
