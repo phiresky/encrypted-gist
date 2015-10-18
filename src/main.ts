@@ -124,7 +124,7 @@ module GUI {
 			document.writeln("Loading...<!--");
 			Upload.downloadFile(filename, key).then(displayImage);
 		}
-	} else if (github.access_token) {
+	} else if (github.access_token || !repoName) {
 		document.addEventListener('DOMContentLoaded', () => {
 			document.getElementById("fileinput").addEventListener('change', e => { Upload.uploadFile(e).then(displayImage) }, false);
 		});

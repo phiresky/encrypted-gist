@@ -468,7 +468,7 @@ var GUI;
             document.writeln("Loading...<!--");
             Upload.downloadFile(filename, key).then(displayImage);
         }
-    } else if (github.access_token) {
+    } else if (github.access_token || !repoName) {
         document.addEventListener('DOMContentLoaded', function () {
             document.getElementById("fileinput").addEventListener('change', function (e) {
                 Upload.uploadFile(e).then(displayImage);
