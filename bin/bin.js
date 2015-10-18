@@ -433,7 +433,7 @@ var GUI;
     var magics = { 0xFFD8: 'image/jpeg', 0x5249: 'image/webp', 0x8950: 'image/png' };
     function displayImage(data) {
         return __awaiter(this, void 0, Promise, function* () {
-            var magic = new DataView(data, 0, 2).getInt16(0, false);
+            var magic = new DataView(data, 0, 2).getUint16(0, false);
             var mime = magics[magic];
             console.log("displaying " + data.byteLength / 1000 + "kByte mime=" + (mime || "unknown: 0x" + magic.toString(16)) + " image");
             var file = new Blob([data], { type: mime || "image/jpeg" });

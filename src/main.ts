@@ -101,7 +101,7 @@ module Util {
 module GUI {
 	const magics = { 0xFFD8: 'image/jpeg', 0x5249: 'image/webp', 0x8950: 'image/png' }
 	async function displayImage(data: ArrayBuffer) {
-		const magic = new DataView(data, 0, 2).getInt16(0, false);
+		const magic = new DataView(data, 0, 2).getUint16(0, false);
 		const mime = magics[magic];
 		console.log(`displaying ${data.byteLength / 1000}kByte mime=${mime || "unknown: 0x" + magic.toString(16) } image`);
 		let file = new Blob([data], { type: mime || "image/jpeg" });
