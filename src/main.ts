@@ -159,10 +159,12 @@ module Util {
 }
 
 module GUI {
+	const magics = {0xFFD8: 'image/jpeg', 0x5249: 'image/webp', 0x8950: 'image/png' }
 	function displayImage(data: ArrayBuffer) {
 		const img = document.createElement("img");
-		const magic = new Uint16Array(data, 0, 1)[0];
-		const file = new Blob([data], { type: (magic == 0xFFD8 ? 'image/jpeg' : 'image/png') });
+		const magic = new DataView(data, 0, 2).getInt16(0, false);
+		console.log(`displaying ${data.byteLength/1000}kByte mime=${magics[magic] || "unknown: 0x"+magic.toString(16)} image`);
+		const file = new Blob([data], { type: magics[magic] || 'image/jpeg' });
 		const url = URL.createObjectURL(file);
 		img.src = url;
 		document.body.innerHTML = "";

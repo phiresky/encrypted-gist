@@ -370,10 +370,12 @@ var Util;
 })(Util || (Util = {}));
 var GUI;
 (function (GUI) {
+    var magics = { 0xFFD8: 'image/jpeg', 0x5249: 'image/webp', 0x8950: 'image/png' };
     function displayImage(data) {
         var img = document.createElement("img");
-        var magic = new Uint16Array(data, 0, 1)[0];
-        var file = new Blob([data], { type: magic == 0xFFD8 ? 'image/jpeg' : 'image/png' });
+        var magic = new DataView(data, 0, 2).getInt16(0, false);
+        console.log("displaying " + data.byteLength / 1000 + "kByte mime=" + (magics[magic] || "unknown: 0x" + magic.toString(16)) + " image");
+        var file = new Blob([data], { type: magics[magic] || 'image/jpeg' });
         var url = URL.createObjectURL(file);
         img.src = url;
         document.body.innerHTML = "";
