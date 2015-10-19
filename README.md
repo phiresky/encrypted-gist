@@ -48,7 +48,8 @@ Starting with only image uploads, I expanded it to work for any file type.
 3. Decrypt file
 3. View file according its metadata
 
-This tool also had support for uploading the files to github repositories, but I removed that because it was a hassle.
+This tool also had support for uploading the files to github repositories, 
+but I removed that because it was a hassle ([see here](https://github.com/phiresky/encrypted-gist/commit/5fdd0aa003d97bc2e5d8c548a9f7b4a714406a24)).
 
 ## Limitations
 

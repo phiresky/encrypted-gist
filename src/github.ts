@@ -2,7 +2,7 @@ declare var fetch: typeof window.fetch;
 class Github {
 	constructor(public apiUrl = `https://api.github.com/`) { }
 	async fetch(path: string, data?: RequestInit) {
-		log("fetching " + (data.method||"") + " " +this.apiUrl + path);
+		log("fetching " + (data && data.method||"") + " " +this.apiUrl + path);
 		return await fetch(this.apiUrl + path, data);
 	}
 	async fetchJSON(path: string, data?: RequestInit) {

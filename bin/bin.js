@@ -94,21 +94,14 @@ var __awaiter = undefined && undefined.__awaiter || function (thisArg, _argument
 
 var Github = (function () {
     function Github() {
-        var access_token = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
-        var apiUrl = arguments.length <= 1 || arguments[1] === undefined ? "https://api.github.com/" : arguments[1];
+        var apiUrl = arguments.length <= 0 || arguments[0] === undefined ? "https://api.github.com/" : arguments[0];
 
         _classCallCheck(this, Github);
 
-        this.access_token = access_token;
         this.apiUrl = apiUrl;
     }
 
     _createClass(Github, [{
-        key: "getRepo",
-        value: function getRepo(repo) {
-            return new GithubRepo(this, repo);
-        }
-    }, {
         key: "fetch",
         value: (function (_fetch) {
             function fetch(_x, _x2) {
@@ -121,35 +114,25 @@ var Github = (function () {
 
             return fetch;
         })(function (path, data) {
-            var authenticate = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
-
             return __awaiter(this, void 0, Promise, function* () {
-                if (!data) data = { headers: new Headers() };
-                if (!data.headers) data.headers = new Headers();
-                var h = data.headers;
-                if (authenticate) if (this.access_token) h.append("Authorization", "token " + this.access_token);else throw Error("can't " + data.method + " " + path + " without access token");
-                log("fetching " + (data.method || "") + " " + this.apiUrl + path);
+                log("fetching " + (data && data.method || "") + " " + this.apiUrl + path);
                 return yield fetch(this.apiUrl + path, data);
             });
         })
     }, {
         key: "fetchJSON",
         value: function fetchJSON(path, data) {
-            var authenticate = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
-
             return __awaiter(this, void 0, Promise, function* () {
-                return yield (yield this.fetch(path, data, authenticate)).json();
+                return yield (yield this.fetch(path, data)).json();
             });
         }
     }, {
         key: "fetchRaw",
         value: function fetchRaw(path, data) {
-            var authenticate = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
-
             return __awaiter(this, void 0, Promise, function* () {
                 var headers = new Headers();
                 headers.append("Accept", "application/vnd.github.v3.raw");
-                var r = yield this.fetch(path, { headers: headers }, authenticate);
+                var r = yield this.fetch(path, { headers: headers });
                 return yield r.arrayBuffer();
             });
         }
@@ -157,12 +140,11 @@ var Github = (function () {
         key: "postJSON",
         value: function postJSON(path, data) {
             var method = arguments.length <= 2 || arguments[2] === undefined ? "POST" : arguments[2];
-            var authenticate = arguments.length <= 3 || arguments[3] === undefined ? false : arguments[3];
 
             return __awaiter(this, void 0, Promise, function* () {
                 var headers = new Headers();
                 headers.append("Content-Type", "application/json;charset=UTF-8");
-                return yield this.fetchJSON(path, { method: method, headers: headers, body: JSON.stringify(data) }, authenticate);
+                return yield this.fetchJSON(path, { method: method, headers: headers, body: JSON.stringify(data) });
             });
         }
     }, {
@@ -172,7 +154,7 @@ var Github = (function () {
             var authenticate = arguments.length <= 3 || arguments[3] === undefined ? false : arguments[3];
 
             return __awaiter(this, void 0, Promise, function* () {
-                return yield this.postJSON("gists", { description: description, "public": is_public, files: files }, "POST", authenticate);
+                return yield this.postJSON("gists", { description: description, "public": is_public, files: files }, "POST");
             });
         }
     }, {
@@ -187,114 +169,7 @@ var Github = (function () {
     return Github;
 })();
 
-var GithubRepo = (function () {
-    function GithubRepo(github, repo) {
-        _classCallCheck(this, GithubRepo);
-
-        this.github = github;
-        this.repo = repo;
-    }
-
-    _createClass(GithubRepo, [{
-        key: "getRefs",
-        value: function getRefs() {
-            return __awaiter(this, void 0, Promise, function* () {
-                return yield this.github.fetchJSON(this.repo + "/git/refs");
-            });
-        }
-    }, {
-        key: "getRef",
-        value: function getRef() {
-            var ref = arguments.length <= 0 || arguments[0] === undefined ? "heads/master" : arguments[0];
-
-            return __awaiter(this, void 0, Promise, function* () {
-                return yield this.github.fetchJSON(this.repo + "/git/refs/" + ref);
-            });
-        }
-    }, {
-        key: "updateRef",
-        value: function updateRef(sha) {
-            var ref = arguments.length <= 1 || arguments[1] === undefined ? "heads/master" : arguments[1];
-
-            return __awaiter(this, void 0, Promise, function* () {
-                return yield this.github.postJSON(this.repo + "/git/refs/" + ref, { sha: sha }, "PATCH");
-            });
-        }
-    }, {
-        key: "getHead",
-        value: function getHead() {
-            return __awaiter(this, void 0, Promise, function* () {
-                var branch = yield this.getRef();
-                return branch.object.sha;
-            });
-        }
-    }, {
-        key: "getTree",
-        value: function getTree(sha) {
-            var recursive = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
-
-            return __awaiter(this, void 0, Promise, function* () {
-                return yield this.github.fetchJSON(this.repo + "/git/trees/" + sha + (recursive ? "?recursive=1" : ""));
-            });
-        }
-    }, {
-        key: "createBlob",
-        value: function createBlob(data) {
-            return __awaiter(this, void 0, Promise, function* () {
-                var resp = yield this.github.postJSON(this.repo + "/git/blobs", {
-                    encoding: "base64", content: base64.encode(data, false, true)
-                });
-                return resp.sha;
-            });
-        }
-    }, {
-        key: "getBlob",
-        value: function getBlob(sha) {
-            return __awaiter(this, void 0, Promise, function* () {
-                return yield this.github.fetchRaw(this.repo + "/git/blobs/" + sha);
-            });
-        }
-    }, {
-        key: "createTree",
-        value: function createTree(base_tree, path, sha) {
-            return __awaiter(this, void 0, Promise, function* () {
-                var resp = yield this.github.postJSON(this.repo + "/git/trees", {
-                    base_tree: base_tree, tree: [{ path: path, mode: "100644", type: "blob", sha: sha }]
-                });
-                return resp;
-            });
-        }
-    }, {
-        key: "createCommit",
-        value: function createCommit(parent, tree, message) {
-            return __awaiter(this, void 0, Promise, function* () {
-                return yield this.github.postJSON(this.repo + "/git/commits", { message: message, parents: [parent], tree: tree });
-            });
-        }
-    }, {
-        key: "pushFileToMaster",
-        value: function pushFileToMaster(path, content, commitMessage) {
-            return __awaiter(this, void 0, Promise, function* () {
-                var head = yield this.getHead();
-                var newtree = yield this.createTree(head, path, (yield this.createBlob(content.buffer)));
-                var newsha = newtree.sha;
-                var files = newtree.tree;
-                var filesha = files.filter(function (file) {
-                    return file.path == path;
-                })[0].sha;
-                var commit = yield this.createCommit(head, newsha, commitMessage);
-                yield this.updateRef(commit.sha);
-                return filesha;
-            });
-        }
-    }]);
-
-    return GithubRepo;
-})();
-
-var repoName = null; // "phire-store/testing";
-var github = new Github(typeof localStorage != "undefined" && localStorage.getItem("accessToken"));
-var repo = github.getRepo(repoName);
+var github = new Github();
 var $ = function $(s) {
     return [].slice.call(document.querySelectorAll(s));
 };
@@ -336,22 +211,15 @@ var SimpleCrypto;
 })(SimpleCrypto || (SimpleCrypto = {}));
 var Upload;
 (function (Upload) {
-    var gistUploadMethod = function gistUploadMethod(d) {
+    function uploadToGist(d) {
         return __awaiter(this, void 0, Promise, function* () {
             var f = Util.randomString(1, 16);
             if (d.byteLength >= 1000 * 3 / 4 * 1000) console.warn("Data should be < 700 kB to avoid calling api twice");
             if (d.byteLength >= 2e6) throw "Data must be < 2 MB"; // more should be possible
             return (yield github.createGist(Util.randomString(0, 10), _defineProperty({}, f, { content: base64.encode(d.buffer, true, false) }))).id;
         });
-    };
-    var repoUploadMethod = function repoUploadMethod(d) {
-        return repo.pushFileToMaster(Util.randomString(1, 16), d, "add");
-    };
-    var uploadMethod = repoName ? repoUploadMethod : gistUploadMethod;
-    var downloadMethod = undefined;
-    if (repoName) downloadMethod = function (sha) {
-        return repo.getBlob(sha);
-    };else downloadMethod = function (sha) {
+    }
+    function downloadFromGist(sha) {
         return __awaiter(this, void 0, Promise, function* () {
             var gist = yield github.getGist(sha);
             var file = gist.files[Object.keys(gist.files)[0]];
@@ -359,13 +227,7 @@ var Upload;
                 return base64.decode((yield (yield fetch(file.raw_url)).text()), true);
             } else return base64.decode(file.content, true);
         });
-    };
-    function getAllowUploadURL() {
-        return __awaiter(this, void 0, Promise, function* () {
-            location.hash = "#allowupload!" + github.access_token;
-        });
     }
-    Upload.getAllowUploadURL = getAllowUploadURL;
     function uploadEncrypted(meta, raw_data) {
         return __awaiter(this, void 0, Promise, function* () {
             var _Util;
@@ -380,14 +242,14 @@ var Upload;
             var key = _ref.key;
 
             // TODO: don't copy all data twice (via Util.joinBuffers)
-            return { data: data, key: key, sha: yield uploadMethod((yield (_Util = Util).joinBuffers.apply(_Util, _toConsumableArray(data)))) };
+            return { data: data, key: key, sha: yield uploadToGist((yield (_Util = Util).joinBuffers.apply(_Util, _toConsumableArray(data)))) };
         });
     }
     Upload.uploadEncrypted = uploadEncrypted;
     function downloadEncrypted(sha, key) {
         return __awaiter(this, void 0, Promise, function* () {
             sha = Util.arrToHex(new Uint8Array(base64.decode(sha, true)));
-            var buf = yield SimpleCrypto.decrypt(new Uint8Array((yield downloadMethod(sha))), key);
+            var buf = yield SimpleCrypto.decrypt(new Uint8Array((yield downloadFromGist(sha))), key);
             var sep = new Uint8Array(buf).indexOf(0);
             var meta = new TextDecoder().decode(new Uint8Array(buf, 0, sep));
             log("Decoded metadata: " + meta);
@@ -538,27 +400,18 @@ var GUI;
         if (typeof process !== "undefined") {
             initializeNode();
         } else if (location.hash) {
-            if (location.hash.startsWith("#allowupload!")) {
-                var token = location.hash.substr(1).split("!")[1];
-                localStorage.setItem("accessToken", token);
-                location.hash = "";
-                location.reload();
-            } else {
-                var _location$hash$substr$split = location.hash.substr(1).split("!");
+            var _location$hash$substr$split = location.hash.substr(1).split("!");
 
-                var _location$hash$substr$split2 = _slicedToArray(_location$hash$substr$split, 2);
+            var _location$hash$substr$split2 = _slicedToArray(_location$hash$substr$split, 2);
 
-                var filename = _location$hash$substr$split2[0];
-                var key = _location$hash$substr$split2[1];
+            var filename = _location$hash$substr$split2[0];
+            var key = _location$hash$substr$split2[1];
 
-                log("Loading...");
-                container.innerHTML = "<h3>Loading...</h3>";
-                Upload.downloadEncrypted(filename, key).then(displayFile);
-            }
-        } else if (github.access_token || !repoName) {
-            initializeUploader();
+            log("Loading...");
+            container.innerHTML = "<h3>Loading...</h3>";
+            Upload.downloadEncrypted(filename, key).then(displayFile);
         } else {
-            log("No image given and upload key missing");
+            initializeUploader();
         }
     });
 })(GUI || (GUI = {}));
