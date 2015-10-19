@@ -5,11 +5,15 @@
 	pre {margin: 1em;border: 1px solid black;padding: 1em;}
 	img {max-width: 100%}
 	footer a {color:gray}
+	.container {margin-bottom:10em;}
 </style>
 <div class="container">Initializing...</div>
 
+<button onclick="showlog.style.display='';">Show log</button>
+<div id="showlog" style="display:none;">
 <h3>Log</h3>
 <pre id="log"></pre>
+</div>
 <a href="#" id="removeIfUpload">Upload a file</a>
 <footer>
 	<a href="https://github.com/phiresky/github-screenshot">Source and more information on GitHub</a>
