@@ -1,6 +1,6 @@
 # encrypted-gist
 
-Store any type of files by uploading them to GitHub as encrypted text files.
+Store any type of file by uploading them to GitHub as encrypted text files.
 
 #### Hosted version:
 
@@ -48,8 +48,7 @@ Starting with only image uploads, I expanded it to work for any file type.
 3. Decrypt file
 3. View file according its metadata
 
-It's also possible to use a public github repository instead by supplying a repo name and access token.
-This has the advantage of allowing deletions and more efficient storage, but needs setup. *Do not* upload your access token anywhere. Instead set it once with `localStorage.setItem("accessToken", ...)`. Giving others a special URL to allow uploading is then possible via `Upload.getAllowUploadURL()`
+This tool also had support for uploading the files to github repositories, but I removed that because it was a hassle.
 
 ## Limitations
 

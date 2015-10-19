@@ -1,7 +1,4 @@
-const repoName = null; // "phire-store/testing";
-
-let github = new Github(typeof localStorage != "undefined" && localStorage.getItem("accessToken"));
-let repo = github.getRepo(repoName);
+let github = new Github();
 
 const $ = s => [].slice.call(document.querySelectorAll(s)) as HTMLElement[];
 function log(info: any) {
@@ -39,8 +36,7 @@ interface UploadMetadata {
 	name: string, type: string
 }
 module Upload {
-	type UploadMethod = (data: Uint8Array) => Promise<string>;
-	const gistUploadMethod: UploadMethod = async function(d) {
+	async function uploadToGist(d) {
 		const f = Util.randomString(1, 16);
 		if (d.byteLength >= 1000 * 3 / 4 * 1000) console.warn("Data should be < 700 kB to avoid calling api twice");
 		if (d.byteLength >= 2e6) throw "Data must be < 2 MB"; // more should be possible
@@ -48,13 +44,7 @@ module Upload {
 			[f]: { content: base64.encode(d.buffer, true, false) }
 		})).id;
 	}
-	const repoUploadMethod = (d) => repo.pushFileToMaster(Util.randomString(1, 16), d, "add");
-
-	let uploadMethod: UploadMethod = repoName ? repoUploadMethod : gistUploadMethod;
-
-	let downloadMethod: (sha: string) => Promise<ArrayBuffer>;
-	if (repoName) downloadMethod = (sha) => repo.getBlob(sha);
-	else downloadMethod = async function(sha) {
+	async function downloadFromGist(sha) {
 		const gist = await github.getGist(sha);
 		const file = gist.files[Object.keys(gist.files)[0]];
 		if (file.truncated) {
@@ -62,20 +52,17 @@ module Upload {
 		} else
 			return base64.decode(file.content, true);
 	}
-	export async function getAllowUploadURL() {
-		location.hash = "#allowupload!" + github.access_token;
-	}
 	export async function uploadEncrypted(meta: UploadMetadata, raw_data:Uint8Array) {
 		log("Uploading...");
 		const nullByte = new Uint8Array(1);
 		const inputData = await Util.joinBuffers(new TextEncoder().encode(JSON.stringify(meta)), nullByte, raw_data);
 		const {data, key} = await SimpleCrypto.encrypt(inputData);
 		// TODO: don't copy all data twice (via Util.joinBuffers)
-		return { data, key, sha: await uploadMethod(await Util.joinBuffers(...data)) };
+		return { data, key, sha: await uploadToGist(await Util.joinBuffers(...data)) };
 	}
 	export async function downloadEncrypted(sha: string, key: string) {
 		sha = Util.arrToHex(new Uint8Array(base64.decode(sha, true)));
-		const buf = await SimpleCrypto.decrypt(new Uint8Array(await downloadMethod(sha)), key);
+		const buf = await SimpleCrypto.decrypt(new Uint8Array(await downloadFromGist(sha)), key);
 		const sep = new Uint8Array(buf).indexOf(0);
 		const meta = new TextDecoder().decode(new Uint8Array(buf, 0, sep));
 		log("Decoded metadata: " + meta);
@@ -202,21 +189,12 @@ module GUI {
 		if (typeof process !== "undefined") {
 			initializeNode();
 		} else if (location.hash) {
-			if (location.hash.startsWith("#allowupload!")) {
-				const token = location.hash.substr(1).split("!")[1];
-				localStorage.setItem("accessToken", token);
-				location.hash = "";
-				location.reload();
-			} else {
-				const [filename, key] = location.hash.substr(1).split("!");
-				log("Loading...");
-				container.innerHTML = "<h3>Loading...</h3>";
-				Upload.downloadEncrypted(filename, key).then(displayFile);
-			}
-		} else if (github.access_token || !repoName) {
-			initializeUploader();
+			const [filename, key] = location.hash.substr(1).split("!");
+			log("Loading...");
+			container.innerHTML = "<h3>Loading...</h3>";
+			Upload.downloadEncrypted(filename, key).then(displayFile);
 		} else {
-			log("No image given and upload key missing");
+			initializeUploader();
 		}
 	});
 }
