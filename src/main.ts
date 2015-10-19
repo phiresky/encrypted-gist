@@ -110,11 +110,8 @@ module Util {
 		return map[fname] || "";
 	}
 	export function createBlobUrl(fname: string, data: Uint8Array) {
-		const magics = new Map<string, string>([['jpg', '']]);
-		const magic = new DataView(data.buffer, 0 + data.byteOffset, 2).getUint16(0, false);
-		const mime = magics[magic];
-		log(`Displaying ${data.byteLength / 1000} kByte ${mime || "unknown mime type: 0x" + magic.toString(16) }`);
-		return URL.createObjectURL(new Blob([data], { type: mime || "image/jpeg" }));
+		log(`Displaying ${data.byteLength / 1000} kByte file`);
+		return URL.createObjectURL(new Blob([data]));
 	}
 }
 
@@ -197,4 +194,5 @@ module GUI {
 			initializeUploader();
 		}
 	});
+	window.addEventListener('hashchange', () => location.reload());
 }

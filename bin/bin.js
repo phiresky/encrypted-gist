@@ -321,11 +321,8 @@ var Util;
     }
     Util.getMimeType = getMimeType;
     function createBlobUrl(fname, data) {
-        var magics = new Map([['jpg', '']]);
-        var magic = new DataView(data.buffer, 0 + data.byteOffset, 2).getUint16(0, false);
-        var mime = magics[magic];
-        log("Displaying " + data.byteLength / 1000 + " kByte " + (mime || "unknown mime type: 0x" + magic.toString(16)));
-        return URL.createObjectURL(new Blob([data], { type: mime || "image/jpeg" }));
+        log("Displaying " + data.byteLength / 1000 + " kByte file");
+        return URL.createObjectURL(new Blob([data]));
     }
     Util.createBlobUrl = createBlobUrl;
 })(Util || (Util = {}));
@@ -413,6 +410,9 @@ var GUI;
         } else {
             initializeUploader();
         }
+    });
+    window.addEventListener('hashchange', function () {
+        return location.reload();
     });
 })(GUI || (GUI = {}));
 //# sourceMappingURL=tmp.js.map
