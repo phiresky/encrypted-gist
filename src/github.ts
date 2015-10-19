@@ -11,7 +11,7 @@ class Github {
 		if (authenticate)
 			if (this.access_token) h.append("Authorization", "token " + this.access_token);
 			else throw Error(`can't ${data.method} ${path} without access token`);
-		console.log("fetch", this.apiUrl + path, data);
+		log("fetching " + (data.method||"") + " " +this.apiUrl + path);
 		return await fetch(this.apiUrl + path, data);
 	}
 	async fetchJSON(path: string, data?: RequestInit, authenticate = false) {
