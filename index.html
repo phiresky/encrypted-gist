@@ -1,11 +1,18 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>Image Uploader</title>
-<script src="bin/bin.js"></script>
+<title>Encrypted Github Data Uploader</title>
+<style>
+	pre {margin: 1em;border: 1px solid black;padding: 1em;}
+	img {max-width: 100%}
+	footer a {color:gray}
+</style>
+<div class="container">Initializing...</div>
 
-<h3>Upload an image</h3>
-<input type="file" id="fileinput">
-
-<footer style="margin-top:10em">
-	<a href="https://github.com/phiresky/github-screenshot" style="color:gray">Source on GitHub</a>
+<h3>Log</h3>
+<pre id="log"></pre>
+<footer>
+	<a href="https://github.com/phiresky/github-screenshot">Source and more information on GitHub</a>
 </footer>
+
+
+<script src="bin/bin.js"></script>
