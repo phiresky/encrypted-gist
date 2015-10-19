@@ -148,6 +148,7 @@ module GUI {
 				const sha = base64.encode(Util.hexToArr(info.sha).buffer, true, false);
 				history.replaceState({}, "", "#" + sha + "!" + info.key);
 				displayFile({meta, data});
+				$("#removeIfUpload")[0].style.display = "";
 			} else throw Error("no file selected");
 		} catch (e) {
 			log(e); throw e;
@@ -165,6 +166,7 @@ module GUI {
 			<button id="uploadbutton">Upload</button>
 			<p>The file will be encrypted and authenticated using 128bit AES-GCM.</p>
 		`;
+		$("#removeIfUpload")[0].style.display = "none";
 		$("#uploadbutton")[0].addEventListener('click', beginUpload);
 	}
 	

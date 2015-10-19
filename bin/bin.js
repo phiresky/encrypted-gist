@@ -364,6 +364,7 @@ var GUI;
                     var sha = base64.encode(Util.hexToArr(info.sha).buffer, true, false);
                     history.replaceState({}, "", "#" + sha + "!" + info.key);
                     displayFile({ meta: meta, data: data });
+                    $("#removeIfUpload")[0].style.display = "";
                 } else throw Error("no file selected");
             } catch (e) {
                 log(e);
@@ -376,6 +377,7 @@ var GUI;
         container.innerHTML = "\n\t\t\t<h3>Upload a file (image/audio/video/text)</h3>\n\t\t\t<p><input type=\"file\" id=\"fileinput\"></p>\n\t\t\t" + types.map(function (type) {
             return "<input type=\"radio\" name=\"type\" id=\"type_" + type.name + "\" value=\"" + type.name + "\">\n\t\t\t\t <label for=\"type_" + type.name + "\">" + type.name + "</label>";
         }).join("") + "\n\t\t\t<button id=\"uploadbutton\">Upload</button>\n\t\t\t<p>The file will be encrypted and authenticated using 128bit AES-GCM.</p>\n\t\t";
+        $("#removeIfUpload")[0].style.display = "none";
         $("#uploadbutton")[0].addEventListener('click', beginUpload);
     }
     function initializeNode() {
