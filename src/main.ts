@@ -4,11 +4,11 @@ const $ = s => [].slice.call(document.querySelectorAll(s)) as HTMLElement[];
 function log(info: any) {
 	console.log(info);
 	const e = $("#log")[0];
-	if(e) e.innerHTML += info + "<br>";
+	if (e) e.innerHTML += info + "<br>";
 }
 function showLog() {
-	$("button[onclick='showLog()']")[0].style.display='none';
-	$("#showlog")[0].style.display='';
+	$("button[onclick='showLog()']")[0].style.display = 'none';
+	$("#showlog")[0].style.display = '';
 }
 
 declare var TextDecoder, TextEncoder;
@@ -56,7 +56,7 @@ module Upload {
 		} else
 			return base64.decode(file.content, true);
 	}
-	export async function uploadEncrypted(meta: UploadMetadata, raw_data:Uint8Array) {
+	export async function uploadEncrypted(meta: UploadMetadata, raw_data: Uint8Array) {
 		log("Uploading...");
 		const nullByte = new Uint8Array(1);
 		const inputData = await Util.joinBuffers(new TextEncoder().encode(JSON.stringify(meta)), nullByte, raw_data);
@@ -78,7 +78,7 @@ module Upload {
 }
 
 module Util {
-	export async function readFile(f: File|Blob) {
+	export async function readFile(f: File | Blob) {
 		return new Promise<ArrayBuffer>(resolve => {
 			const r = new FileReader();
 			r.onload = e => resolve(r.result as ArrayBuffer);
@@ -101,16 +101,16 @@ module Util {
 		for (const byte of arr) out += (byte < 16 ? "0" + byte.toString(16) : byte.toString(16));
 		return out;
 	}
-	export async function joinBuffers(...arrs:Uint8Array[]) {
+	export async function joinBuffers(...arrs: Uint8Array[]) {
 		return new Uint8Array(await Util.readFile(new Blob(arrs)));
 	}
-	export function htmlEscape(s:string) {
+	export function htmlEscape(s: string) {
 		const div = document.createElement("div"); div.textContent = s;
 		return div.innerHTML;
 	}
 	export function getMimeType(fname: string) {
 		const ext = fname.split(".").pop();
-		const map = {jpg:"image/jpeg", png:"image/png", mp3:"audio/mpeg"};
+		const map = { jpg: "image/jpeg", png: "image/png", mp3: "audio/mpeg" };
 		return map[fname] || "";
 	}
 	export function createBlobUrl(fname: string, data: Uint8Array) {
@@ -119,40 +119,40 @@ module Util {
 	}
 }
 
-module GUI {	
+module GUI {
 	const container = $(".container")[0];
-	interface UploadType { name: string, toHTML: (filename:string, data: Uint8Array) => string };
+	interface UploadType { name: string, toHTML: (filename: string, data: Uint8Array) => string };
 	const types: UploadType[] = [
-		{ name: "Text", toHTML: (f, data) => `<pre class="uploaded">${new TextDecoder().decode(data)}</pre>`},
-		{ name: "Raw", toHTML: (f, data) => `<a href="${Util.createBlobUrl(f, data)}" download="${f}">Download ${f}</a>`},
-		{ name: "Image", toHTML: (f, data) => `<img src="${Util.createBlobUrl(f, data)}">`},
-		{ name: "Audio", toHTML: (f, data) => `<audio controls><source src="${Util.createBlobUrl(f, data)}"></audio>`},
-		{ name: "Video", toHTML: (f, data) => `<video controls><source src="${Util.createBlobUrl(f, data)}"></video>`}
+		{ name: "Text", toHTML: (f, data) => `<pre class="uploaded">${new TextDecoder().decode(data) }</pre>` },
+		{ name: "Raw", toHTML: (f, data) => `<a href="${Util.createBlobUrl(f, data) }" download="${f}">Download ${f}</a>` },
+		{ name: "Image", toHTML: (f, data) => `<img src="${Util.createBlobUrl(f, data) }">` },
+		{ name: "Audio", toHTML: (f, data) => `<audio controls><source src="${Util.createBlobUrl(f, data) }"></audio>` },
+		{ name: "Video", toHTML: (f, data) => `<video controls><source src="${Util.createBlobUrl(f, data) }"></video>` }
 	]
-	
-	function displayFile(info:{meta:UploadMetadata, data: Uint8Array}) {
+
+	function displayFile(info: { meta: UploadMetadata, data: Uint8Array }) {
 		const type = types.filter(t => t.name == info.meta.type)[0];
-		if(type) {
-			container.innerHTML = `<h3>File ${Util.htmlEscape(info.meta.name)}</h3>`
+		if (type) {
+			container.innerHTML = `<h3>File ${Util.htmlEscape(info.meta.name) }</h3>`
 			+ type.toHTML(info.meta.name, info.data);
 			log("Displayed file as " + info.meta.type);
-		}else log("unknown type " + info.meta.type);
+		} else log("unknown type " + info.meta.type);
 	}
-	
+
 	export async function beginUpload() {
 		try {
 			const file = ($("input[type=file]")[0] as HTMLInputElement).files[0];
 			if (file) {
 				const data = new Uint8Array(await Util.readFile(file));
-				const type = (($("input[type=radio]:checked")[0]||{}) as HTMLInputElement).value;
-				if(!type) throw Error("no type selected");
+				const type = (($("input[type=radio]:checked")[0] || {}) as HTMLInputElement).value;
+				if (!type) throw Error("no type selected");
 				container.innerHTML = "<h3>Uploading...</h3>";
-				const meta = {name:file.name, type};
+				const meta = { name: file.name, type };
 				const info = await Upload.uploadEncrypted(meta, data);
 				log("Uploaded. Updating URL and displaying...");
 				const sha = base64.encode(Util.hexToArr(info.sha).buffer, true, false);
 				history.replaceState({}, "", "#" + sha + "!" + info.key);
-				displayFile({meta, data});
+				displayFile({ meta, data });
 				$("#removeIfUpload")[0].style.display = "";
 			} else throw Error("no file selected");
 		} catch (e) {
@@ -174,7 +174,7 @@ module GUI {
 		$("#removeIfUpload")[0].style.display = "none";
 		$("#uploadbutton")[0].addEventListener('click', beginUpload);
 	}
-	
+
 	declare var process, require;
 	async function initializeNode() {
 		// (broken) running from node
