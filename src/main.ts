@@ -10,8 +10,7 @@ function showLog() {
 	$("button[onclick='showLog()']")[0].style.display = 'none';
 	$("#showlog")[0].style.display = '';
 }
-
-declare var TextDecoder, TextEncoder;
+declare var TextDecoder, TextEncoder, fetch: typeof window.fetch;
 
 module SimpleCrypto {
 	export let encryptionAlgorithm = "AES-GCM";
@@ -36,9 +35,7 @@ module SimpleCrypto {
 		return await crypto.subtle.decrypt({ name: encryptionAlgorithm, iv }, imported_key, encrypted_data) as ArrayBuffer;
 	}
 }
-interface UploadMetadata {
-	name: string, type: string
-}
+interface UploadMetadata { name: string, type: string }
 module Upload {
 	async function uploadToGist(d) {
 		const f = Util.randomString(1, 16);

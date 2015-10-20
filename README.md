@@ -2,6 +2,8 @@
 
 Store any type of file by uploading them to GitHub as encrypted text files. (Compatible only with Chrome and Firefox, see [Limitations](#limitations))
 
+The code is fairly simple, 30 lines for the [GitHub API](src/github.ts), 200 lines for [everything else](src/main.ts). There are no dependencies.
+
 #### Hosted version:
 
 https://phiresky.github.io/encrypted-gist/

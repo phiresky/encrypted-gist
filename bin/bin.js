@@ -151,7 +151,6 @@ var Github = (function () {
         key: "createGist",
         value: function createGist(description, files) {
             var is_public = arguments.length <= 2 || arguments[2] === undefined ? true : arguments[2];
-            var authenticate = arguments.length <= 3 || arguments[3] === undefined ? false : arguments[3];
 
             return __awaiter(this, void 0, Promise, function* () {
                 return yield this.postJSON("gists", { description: description, "public": is_public, files: files }, "POST");

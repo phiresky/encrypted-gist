@@ -1,4 +1,3 @@
-declare var fetch: typeof window.fetch;
 class Github {
 	constructor(public apiUrl = `https://api.github.com/`) { }
 	async fetch(path: string, data?: RequestInit) {
@@ -19,7 +18,7 @@ class Github {
 		headers.append("Content-Type", "application/json;charset=UTF-8");
 		return await this.fetchJSON(path, { method, headers, body: JSON.stringify(data) });
 	}
-	async createGist(description: string, files: { [filename: string]: { content: string } }, is_public = true, authenticate = false) {
+	async createGist(description: string, files: { [filename: string]: { content: string } }, is_public = true) {
 		return await this.postJSON("gists", { description, public: is_public, files: files }, "POST");
 	}
 	async getGist(id: string) {
