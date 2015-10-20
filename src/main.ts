@@ -84,7 +84,7 @@ module Util {
 	}
 	export function randomString(minlength: number, maxlength = minlength) {
 		const length = (Math.random() * (maxlength + 1 - minlength) + minlength) | 0;
-		return base64.encode(crypto.getRandomValues(new Uint8Array(length * 3 / 4 + 2)).buffer, true, false).substr(0, length);
+		return base64.encode(crypto.getRandomValues(new Uint8Array((length * 3 / 4 + 2)|0)).buffer, true, false).substr(0, length);
 	}
 	export function hexToArr(hex: string) {
 		const out = new Uint8Array(hex.length / 2);

@@ -282,7 +282,7 @@ var Util;
         var maxlength = arguments.length <= 1 || arguments[1] === undefined ? minlength : arguments[1];
         return (function () {
             var length = Math.random() * (maxlength + 1 - minlength) + minlength | 0;
-            return base64.encode(crypto.getRandomValues(new Uint8Array(length * 3 / 4 + 2)).buffer, true, false).substr(0, length);
+            return base64.encode(crypto.getRandomValues(new Uint8Array(length * 3 / 4 + 2 | 0)).buffer, true, false).substr(0, length);
         })();
     }
     Util.randomString = randomString;
