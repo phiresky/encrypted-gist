@@ -1,6 +1,6 @@
 # encrypted-gist
 
-Store any type of file by uploading them to GitHub as encrypted text files.
+Store any type of file by uploading them to GitHub as encrypted text files. (Compatible only with Chrome and Firefox, see [Limitations](#limitations))
 
 #### Hosted version:
 
@@ -58,7 +58,7 @@ but I removed that because it was a hassle ([see here](https://github.com/phires
 * Github might block this if it's used a lot (though I'm not sure how that would be possible except for disabling the API)
 * Tested on Chrome and Firefox, that's probably all because I don't give a shit about old browsers and this uses tons of very new features 
 (e.g. [crypto api](https://developer.mozilla.org/en-US/docs/Web/API/Crypto),
-[fetch api](https://developer.mozilla.org/en/docs/Web/API/Fetch_API) and async/await) 
+[fetch api](https://developer.mozilla.org/en/docs/Web/API/Fetch_API) and generators for async/await) 
 
 ## Building
 

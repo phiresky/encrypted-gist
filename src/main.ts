@@ -6,6 +6,10 @@ function log(info: any) {
 	const e = $("#log")[0];
 	if(e) e.innerHTML += info + "<br>";
 }
+function showLog() {
+	$("button[onclick='showLog()']")[0].style.display='none';
+	$("#showlog")[0].style.display='';
+}
 
 declare var TextDecoder, TextEncoder;
 
@@ -38,8 +42,8 @@ interface UploadMetadata {
 module Upload {
 	async function uploadToGist(d) {
 		const f = Util.randomString(1, 16);
-		if (d.byteLength >= 1000 * 3 / 4 * 1000) console.warn("Data should be < 700 kB to avoid calling api twice");
-		if (d.byteLength >= 2e6) throw "Data must be < 2 MB"; // more should be possible
+		if (d.byteLength >= 1000 * 3 / 4 * 1000) log("Data should be < 700 kB to avoid calling api twice");
+		if (d.byteLength >= 5e6) throw "Data must be < 5 MB"; // more should be possible
 		return (await github.createGist(Util.randomString(0, 10), {
 			[f]: { content: base64.encode(d.buffer, true, false) }
 		})).id;
@@ -142,6 +146,7 @@ module GUI {
 				const data = new Uint8Array(await Util.readFile(file));
 				const type = (($("input[type=radio]:checked")[0]||{}) as HTMLInputElement).value;
 				if(!type) throw Error("no type selected");
+				container.innerHTML = "<h3>Uploading...</h3>";
 				const meta = {name:file.name, type};
 				const info = await Upload.uploadEncrypted(meta, data);
 				log("Uploaded. Updating URL and displaying...");
@@ -151,7 +156,7 @@ module GUI {
 				$("#removeIfUpload")[0].style.display = "";
 			} else throw Error("no file selected");
 		} catch (e) {
-			log(e); throw e;
+			log(e); showLog(); throw e;
 		}
 	}
 
@@ -164,7 +169,7 @@ module GUI {
 				 <label for="type_${type.name}">${type.name}</label>`
 			).join("") }
 			<button id="uploadbutton">Upload</button>
-			<p>The file will be encrypted and authenticated using 128bit AES-GCM.</p>
+			<p>File must be < 5MB. The file will be encrypted and authenticated using 128bit AES-GCM.</p>
 		`;
 		$("#removeIfUpload")[0].style.display = "none";
 		$("#uploadbutton")[0].addEventListener('click', beginUpload);

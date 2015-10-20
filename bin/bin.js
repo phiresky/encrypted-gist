@@ -178,6 +178,10 @@ function log(info) {
     var e = $("#log")[0];
     if (e) e.innerHTML += info + "<br>";
 }
+function showLog() {
+    $("button[onclick='showLog()']")[0].style.display = 'none';
+    $("#showlog")[0].style.display = '';
+}
 var SimpleCrypto;
 (function (SimpleCrypto) {
     SimpleCrypto.encryptionAlgorithm = "AES-GCM";
@@ -214,8 +218,8 @@ var Upload;
     function uploadToGist(d) {
         return __awaiter(this, void 0, Promise, function* () {
             var f = Util.randomString(1, 16);
-            if (d.byteLength >= 1000 * 3 / 4 * 1000) console.warn("Data should be < 700 kB to avoid calling api twice");
-            if (d.byteLength >= 2e6) throw "Data must be < 2 MB"; // more should be possible
+            if (d.byteLength >= 1000 * 3 / 4 * 1000) log("Data should be < 700 kB to avoid calling api twice");
+            if (d.byteLength >= 5e6) throw "Data must be < 5 MB"; // more should be possible
             return (yield github.createGist(Util.randomString(0, 10), _defineProperty({}, f, { content: base64.encode(d.buffer, true, false) }))).id;
         });
     }
@@ -358,6 +362,7 @@ var GUI;
                     var data = new Uint8Array((yield Util.readFile(file)));
                     var type = ($("input[type=radio]:checked")[0] || {}).value;
                     if (!type) throw Error("no type selected");
+                    container.innerHTML = "<h3>Uploading...</h3>";
                     var meta = { name: file.name, type: type };
                     var info = yield Upload.uploadEncrypted(meta, data);
                     log("Uploaded. Updating URL and displaying...");
@@ -368,6 +373,7 @@ var GUI;
                 } else throw Error("no file selected");
             } catch (e) {
                 log(e);
+                showLog();
                 throw e;
             }
         });
@@ -376,7 +382,7 @@ var GUI;
     function initializeUploader() {
         container.innerHTML = "\n\t\t\t<h3>Upload a file (image/audio/video/text)</h3>\n\t\t\t<p><input type=\"file\" id=\"fileinput\"></p>\n\t\t\t" + types.map(function (type) {
             return "<input type=\"radio\" name=\"type\" id=\"type_" + type.name + "\" value=\"" + type.name + "\">\n\t\t\t\t <label for=\"type_" + type.name + "\">" + type.name + "</label>";
-        }).join("") + "\n\t\t\t<button id=\"uploadbutton\">Upload</button>\n\t\t\t<p>The file will be encrypted and authenticated using 128bit AES-GCM.</p>\n\t\t";
+        }).join("") + "\n\t\t\t<button id=\"uploadbutton\">Upload</button>\n\t\t\t<p>File must be < 5MB. The file will be encrypted and authenticated using 128bit AES-GCM.</p>\n\t\t";
         $("#removeIfUpload")[0].style.display = "none";
         $("#uploadbutton")[0].addEventListener('click', beginUpload);
     }
