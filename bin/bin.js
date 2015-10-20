@@ -381,7 +381,7 @@ var GUI;
     function initializeUploader() {
         container.innerHTML = "\n\t\t\t<h3>Upload a file (image/audio/video/text)</h3>\n\t\t\t<p><input type=\"file\" id=\"fileinput\"></p>\n\t\t\t" + types.map(function (type) {
             return "<input type=\"radio\" name=\"type\" id=\"type_" + type.name + "\" value=\"" + type.name + "\">\n\t\t\t\t <label for=\"type_" + type.name + "\">" + type.name + "</label>";
-        }).join("") + "\n\t\t\t<button id=\"uploadbutton\">Upload</button>\n\t\t\t<p>File must be < 5MB. The file will be encrypted and authenticated using 128bit AES-GCM.</p>\n\t\t";
+        }).join("") + "\n\t\t\t<button id=\"uploadbutton\">Upload</button>\n\t\t\t<p>The file will be encrypted and authenticated completely client-side using 128bit AES-GCM. Limit 5 MB.</p>\n\t\t";
         $("#removeIfUpload")[0].style.display = "none";
         $("#uploadbutton")[0].addEventListener('click', beginUpload);
     }

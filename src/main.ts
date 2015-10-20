@@ -166,7 +166,7 @@ module GUI {
 				 <label for="type_${type.name}">${type.name}</label>`
 			).join("") }
 			<button id="uploadbutton">Upload</button>
-			<p>File must be < 5MB. The file will be encrypted and authenticated using 128bit AES-GCM.</p>
+			<p>The file will be encrypted and authenticated completely client-side using 128bit AES-GCM. Limit 5 MB.</p>
 		`;
 		$("#removeIfUpload")[0].style.display = "none";
 		$("#uploadbutton")[0].addEventListener('click', beginUpload);
