@@ -23,31 +23,29 @@ module base64 {
 
 	export const decode = function(base64: string, url: boolean) {
 		const chars = url ? _chars_url : _chars;
-		var bufferLength = base64.length * 0.75,
-			len = base64.length, i, p = 0,
-			encoded1, encoded2, encoded3, encoded4;
+		const len = base64.length;
+		var bufferLength = len * 0.75, p = 0;
 
-		if (base64[base64.length - 1] === "=") {
+		if (base64[len - 1] === "=") {
 			bufferLength--;
-			if (base64[base64.length - 2] === "=") {
+			if (base64[len - 2] === "=") {
 				bufferLength--;
 			}
 		}
 
-		var arraybuffer = new ArrayBuffer(bufferLength),
-			bytes = new Uint8Array(arraybuffer);
+		const bytes = new Uint8Array(new ArrayBuffer(bufferLength));
 
-		for (i = 0; i < len; i += 4) {
-			encoded1 = chars.indexOf(base64[i]);
-			encoded2 = chars.indexOf(base64[i + 1]);
-			encoded3 = chars.indexOf(base64[i + 2]);
-			encoded4 = chars.indexOf(base64[i + 3]);
+		for (let i = 0; i < len; i += 4) {
+			const encoded1 = chars.indexOf(base64[i]);
+			const encoded2 = chars.indexOf(base64[i + 1]);
+			const encoded3 = chars.indexOf(base64[i + 2]);
+			const encoded4 = chars.indexOf(base64[i + 3]);
 
 			bytes[p++] = (encoded1 << 2) | (encoded2 >> 4);
 			bytes[p++] = ((encoded2 & 15) << 4) | (encoded3 >> 2);
 			bytes[p++] = ((encoded3 & 3) << 6) | (encoded4 & 63);
 		}
 
-		return arraybuffer;
+		return bytes.buffer;
 	}
 }

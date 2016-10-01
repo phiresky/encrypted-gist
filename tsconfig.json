@@ -1,14 +1,14 @@
 {
 	"compilerOptions": {
-		"experimentalAsyncFunctions": true,
 		"target": "ES6",
 		"sourceMap": true,
-		"out": "bin/tmp.js"
-	},
-	"files": [
-		"typings/tsd.d.ts",
-		"src/base64.ts",
-		"src/github.ts",
-		"src/main.ts"
-	]
+		"out": "bin/bin.js",
+		"strictNullChecks": true,
+		"noImplicitAny": true,
+		"noImplicitReturns": true,
+		"noImplicitThis": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true
+	}
 }

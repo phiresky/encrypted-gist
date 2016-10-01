@@ -7,7 +7,7 @@ class Github {
 	async fetchJSON(path: string, data?: RequestInit) {
 		return await (await this.fetch(path, data)).json();
 	}
-	async fetchRaw(path: string, data?: RequestInit) {
+	async fetchRaw(path: string) {
 		const headers = new Headers();
 		headers.append("Accept", "application/vnd.github.v3.raw");
 		const r = await this.fetch(path, { headers });

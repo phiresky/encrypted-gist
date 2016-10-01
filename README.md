@@ -25,7 +25,7 @@ But they have become a complete social network, even [covertly redirecting direc
 (ad- and meme-filled) gallery pages](http://minimaxir.com/2014/02/moved-temporarily/).
 
 I often send screenshots, so I need somewhere to put my images. I hate it when links stop working, so
-self-hosting isn't really a solution for me because I don't want a permanent server.
+self-hosting isn't really a solution for me because I don't want to maintain a permanent server.
 
 So I had the *genius* idea to use github repositories or gists as a raw file storage, encrypting the 
 files client-side so only the people I send the link to can view them.
@@ -58,12 +58,12 @@ but I removed that because it was a hassle ([see here](https://github.com/phires
 * Mostly client side, so uses a fair amount of processing power and direct embedding of the images is not possible
 * Github API is fairly limited, so this wastes some data and is slow when images are > 750 kB. I also added an arbitrary limit of 5 MB, though the API supports more.
 * Github might block this if it's used a lot (though I'm not sure how that would be possible except for disabling the API)
-* Tested on Chrome and Firefox, that's probably all because I don't give a shit about old browsers and this uses tons of very new features 
-(e.g. [crypto api](https://developer.mozilla.org/en-US/docs/Web/API/Crypto),
+* Tested on Chrome and Firefox, that's probably it because this uses very new features 
+([crypto api](https://developer.mozilla.org/en-US/docs/Web/API/Crypto),
 [fetch api](https://developer.mozilla.org/en/docs/Web/API/Fetch_API) and generators for async/await) 
 
 ## Building
 
 "Binaries" are included.
 
-Written using Typescript/ES7 with async/await. Get Typescript, run `npm install babel` and start the build watch with `./build.js`
+Written using Typescript/ES2016 with async/await. Get Typescript, run `npm install babel` and start the build watch with `./build.js`
