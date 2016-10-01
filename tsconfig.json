@@ -9,6 +9,7 @@
 		"noImplicitThis": true,
 		"noFallthroughCasesInSwitch": true,
 		"noUnusedLocals": true,
-		"noUnusedParameters": true
+		"noUnusedParameters": true,
+		"jsx": "react"
 	}
 }

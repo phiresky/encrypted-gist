@@ -9,7 +9,7 @@
 </style>
 <div class="container">Initializing...</div>
 
-<div id="showlogbutton"><button onclick="showLog()">Show log</button></div>
+<div id="showlogbutton"><a href onclick="event.preventDefault(); showLog()">Show log</a></div>
 <div id="showlog" style="display:none;">
 	<h3>Log</h3>
 	<pre id="log"></pre>

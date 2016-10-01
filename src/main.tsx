@@ -3,7 +3,7 @@ let github = new Github();
 function log(info: any) {
 	console.log(info);
 	const e = document.getElementById("log");
-	if (e) e.innerHTML += info + "<br>";
+	if (e) e.appendChild(<span>{info}<br/></span>);
 }
 function showLog() {
 	document.getElementById("showlogbutton")!.style.display = 'none';
@@ -83,7 +83,7 @@ module Util {
 	}
 	export function randomString(minlength: number, maxlength = minlength) {
 		const length = (Math.random() * (maxlength + 1 - minlength) + minlength) | 0;
-		return base64.encode(crypto.getRandomValues(new Uint8Array((length * 3 / 4 + 2)|0)).buffer, true, false).substr(0, length);
+		return base64.encode(crypto.getRandomValues(new Uint8Array((length * 3 / 4 + 2) | 0)).buffer, true, false).substr(0, length);
 	}
 	export function hexToArr(hex: string) {
 		const out = new Uint8Array(hex.length / 2);
@@ -100,32 +100,49 @@ module Util {
 	export async function joinBuffers(...arrs: Uint8Array[]) {
 		return new Uint8Array(await Util.readFile(new Blob(arrs)));
 	}
-	export function htmlEscape(s: string) {
-		const div = document.createElement("div"); div.textContent = s;
-		return div.innerHTML;
-	}
 	export function createBlobUrl(data: Uint8Array) {
 		log(`Displaying ${data.byteLength / 1000} kByte file`);
 		return URL.createObjectURL(new Blob([data]));
 	}
 }
+// tiny native DOM creator wrapped in a simple React API for use with Typescript JSX
+module React {
+	export function render(element: HTMLElement, target: Element) {
+		target.innerHTML = "";
+		target.appendChild(element);
+	}
+	export function createElement(tag: string, attributes: { [name: string]: string }, ...children: any[]) {
+		const ele = document.createElement(tag);
+		for (let name in attributes) ele.setAttribute(name, attributes[name]);
+		for (let child of children) React.elementAddChild(ele, child);
+		return ele;
+	}
+	export function elementAddChild(ele: Element, child: any) {
+		if (child instanceof Node) ele.appendChild(child);
+		else if (child instanceof Array) for(let subchild of child) React.elementAddChild(ele, subchild);
+		else ele.appendChild(document.createTextNode(child));
+	}
+}
+declare namespace JSX {
+	type IntrinsicElements = {[name: string]: { [name: string]: string | number | boolean }};
+	type Element = HTMLElement;
+}
 
-module GUI {
+namespace GUI {
 	const container = document.getElementsByClassName("container")[0];
-	interface UploadType { name: string, toHTML: (filename: string, data: Uint8Array) => string };
-	const types: UploadType[] = [
-		{ name: "Text", toHTML: (_, data) => `<pre class="uploaded">${new TextDecoder().decode(data) }</pre>` },
-		{ name: "Raw", toHTML: (f, data) => `<a href="${Util.createBlobUrl(data) }" download="${f}">Download ${f}</a>` },
-		{ name: "Image", toHTML: (_, data) => `<img src="${Util.createBlobUrl(data) }">` },
-		{ name: "Audio", toHTML: (_, data) => `<audio controls><source src="${Util.createBlobUrl(data) }"></audio>` },
-		{ name: "Video", toHTML: (_, data) => `<video controls><source src="${Util.createBlobUrl(data) }"></video>` }
+	interface UploadType { name: string, toHTML: (filename: string, data: Uint8Array) => HTMLElement };
+	export const types: UploadType[] = [
+		{ name: "Text", toHTML: (_, data) => <pre class="uploaded">{new TextDecoder().decode(data)}</pre> },
+		{ name: "Raw", toHTML: (f, data) => <a href={Util.createBlobUrl(data)} download={f}>Download {f}</a> },
+		{ name: "Image", toHTML: (_, data) => <img src={Util.createBlobUrl(data)} /> },
+		{ name: "Audio", toHTML: (_, data) => <audio controls><source src={Util.createBlobUrl(data)} /></audio> },
+		{ name: "Video", toHTML: (_, data) => <video controls><source src={Util.createBlobUrl(data)} /></video> }
 	]
 
 	function displayFile(info: { meta: UploadMetadata, data: Uint8Array }) {
-		const type = types.filter(t => t.name == info.meta.type)[0];
+		const type = types.find(t => t.name == info.meta.type);
 		if (type) {
-			container.innerHTML = `<h3>File ${Util.htmlEscape(info.meta.name) }</h3>`
-			+ type.toHTML(info.meta.name, info.data);
+			React.render(<div><h3>File {info.meta.name}</h3>{type.toHTML(info.meta.name, info.data)}</div>, container);
 			log("Displayed file as " + info.meta.type);
 		} else log("unknown type " + info.meta.type);
 	}
@@ -137,7 +154,7 @@ module GUI {
 				const data = new Uint8Array(await Util.readFile(file));
 				const type = document.querySelector("input[type=radio]:checked") as HTMLInputElement;
 				if (!type) throw Error("no type selected");
-				container.innerHTML = "<h3>Uploading...</h3>";
+				React.render(<h3>Uploading...</h3>, container);
 				const meta = { name: file.name, type: type.value };
 				const info = await Upload.uploadEncrypted(meta, data);
 				log("Uploaded. Updating URL and displaying...");
@@ -152,16 +169,19 @@ module GUI {
 	}
 
 	function initializeUploader() {
-		container.innerHTML = `
-			<h3>Upload a file (image/audio/video/text)</h3>
-			<p><input type="file" id="fileinput"></p>
-			${types.map(type =>
-			`<input type="radio" name="type" id="type_${type.name}" value="${type.name}">
-				 <label for="type_${type.name}">${type.name}</label>`
-			).join("") }
-			<button id="uploadbutton">Upload</button>
-			<p>The file will be encrypted and authenticated completely client-side using 128bit AES-GCM. Limit 5 MB.</p>
-		`;
+		React.render(
+			<div>
+				<h3>Upload a file (image/audio/video/text)</h3>
+				<p><input type="file" id="fileinput" /></p>
+				<div>{types.map(type =>
+					<span><input type="radio" name="type" id={"type_"+type.name} value={type.name} />
+					<label for={"type_"+type.name}>{type.name}</label></span>
+				)}</div>
+				<button id="uploadbutton">Upload</button>
+				<p>The file will be encrypted and authenticated completely client-side using 128bit AES-GCM. Limit 5 MB.</p>
+			</div>,
+			container
+		);
 		document.getElementById("removeIfUpload")!.style.display = "none";
 		document.getElementById("uploadbutton")!.addEventListener('click', beginUpload);
 	}
@@ -170,7 +190,7 @@ module GUI {
 		if (location.hash) {
 			const [filename, key] = location.hash.substr(1).split("!");
 			log("Loading...");
-			container.innerHTML = "<h3>Loading...</h3>";
+			React.render(<h3>Loading...</h3>, container);
 			Upload.downloadEncrypted(filename, key).then(displayFile);
 		} else {
 			initializeUploader();

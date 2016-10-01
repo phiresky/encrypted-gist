@@ -96,7 +96,9 @@ function log(info) {
     console.log(info);
     const e = document.getElementById("log");
     if (e)
-        e.innerHTML += info + "<br>";
+        e.appendChild(React.createElement("span", null,
+            info,
+            React.createElement("br", null)));
 }
 function showLog() {
     document.getElementById("showlogbutton").style.display = 'none';
@@ -222,34 +224,63 @@ var Util;
         });
     }
     Util.joinBuffers = joinBuffers;
-    function htmlEscape(s) {
-        const div = document.createElement("div");
-        div.textContent = s;
-        return div.innerHTML;
-    }
-    Util.htmlEscape = htmlEscape;
     function createBlobUrl(data) {
         log(`Displaying ${data.byteLength / 1000} kByte file`);
         return URL.createObjectURL(new Blob([data]));
     }
     Util.createBlobUrl = createBlobUrl;
 })(Util || (Util = {}));
+// tiny native DOM creator wrapped in a simple React API for use with Typescript JSX
+var React;
+(function (React) {
+    function render(element, target) {
+        target.innerHTML = "";
+        target.appendChild(element);
+    }
+    React.render = render;
+    function createElement(tag, attributes, ...children) {
+        const ele = document.createElement(tag);
+        for (let name in attributes)
+            ele.setAttribute(name, attributes[name]);
+        for (let child of children)
+            React.elementAddChild(ele, child);
+        return ele;
+    }
+    React.createElement = createElement;
+    function elementAddChild(ele, child) {
+        if (child instanceof Node)
+            ele.appendChild(child);
+        else if (child instanceof Array)
+            for (let subchild of child)
+                React.elementAddChild(ele, subchild);
+        else
+            ele.appendChild(document.createTextNode(child));
+    }
+    React.elementAddChild = elementAddChild;
+})(React || (React = {}));
 var GUI;
 (function (GUI) {
     const container = document.getElementsByClassName("container")[0];
     ;
-    const types = [
-        { name: "Text", toHTML: (_, data) => `<pre class="uploaded">${new TextDecoder().decode(data)}</pre>` },
-        { name: "Raw", toHTML: (f, data) => `<a href="${Util.createBlobUrl(data)}" download="${f}">Download ${f}</a>` },
-        { name: "Image", toHTML: (_, data) => `<img src="${Util.createBlobUrl(data)}">` },
-        { name: "Audio", toHTML: (_, data) => `<audio controls><source src="${Util.createBlobUrl(data)}"></audio>` },
-        { name: "Video", toHTML: (_, data) => `<video controls><source src="${Util.createBlobUrl(data)}"></video>` }
+    GUI.types = [
+        { name: "Text", toHTML: (_, data) => React.createElement("pre", { class: "uploaded" }, new TextDecoder().decode(data)) },
+        { name: "Raw", toHTML: (f, data) => React.createElement("a", { href: Util.createBlobUrl(data), download: f },
+                "Download ",
+                f) },
+        { name: "Image", toHTML: (_, data) => React.createElement("img", { src: Util.createBlobUrl(data) }) },
+        { name: "Audio", toHTML: (_, data) => React.createElement("audio", { controls: true },
+                React.createElement("source", { src: Util.createBlobUrl(data) })) },
+        { name: "Video", toHTML: (_, data) => React.createElement("video", { controls: true },
+                React.createElement("source", { src: Util.createBlobUrl(data) })) }
     ];
     function displayFile(info) {
-        const type = types.filter(t => t.name == info.meta.type)[0];
+        const type = GUI.types.find(t => t.name == info.meta.type);
         if (type) {
-            container.innerHTML = `<h3>File ${Util.htmlEscape(info.meta.name)}</h3>`
-                + type.toHTML(info.meta.name, info.data);
+            React.render(React.createElement("div", null,
+                React.createElement("h3", null,
+                    "File ",
+                    info.meta.name),
+                type.toHTML(info.meta.name, info.data)), container);
             log("Displayed file as " + info.meta.type);
         }
         else
@@ -264,7 +295,7 @@ var GUI;
                     const type = document.querySelector("input[type=radio]:checked");
                     if (!type)
                         throw Error("no type selected");
-                    container.innerHTML = "<h3>Uploading...</h3>";
+                    React.render(React.createElement("h3", null, "Uploading..."), container);
                     const meta = { name: file.name, type: type.value };
                     const info = yield Upload.uploadEncrypted(meta, data);
                     log("Uploaded. Updating URL and displaying...");
@@ -285,38 +316,23 @@ var GUI;
     }
     GUI.beginUpload = beginUpload;
     function initializeUploader() {
-        container.innerHTML = `
-			<h3>Upload a file (image/audio/video/text)</h3>
-			<p><input type="file" id="fileinput"></p>
-			${types.map(type => `<input type="radio" name="type" id="type_${type.name}" value="${type.name}">
-				 <label for="type_${type.name}">${type.name}</label>`).join("")}
-			<button id="uploadbutton">Upload</button>
-			<p>The file will be encrypted and authenticated completely client-side using 128bit AES-GCM. Limit 5 MB.</p>
-		`;
+        React.render(React.createElement("div", null,
+            React.createElement("h3", null, "Upload a file (image/audio/video/text)"),
+            React.createElement("p", null,
+                React.createElement("input", { type: "file", id: "fileinput" })),
+            React.createElement("div", null, GUI.types.map(type => React.createElement("span", null,
+                React.createElement("input", { type: "radio", name: "type", id: "type_" + type.name, value: type.name }),
+                React.createElement("label", { for: "type_" + type.name }, type.name)))),
+            React.createElement("button", { id: "uploadbutton" }, "Upload"),
+            React.createElement("p", null, "The file will be encrypted and authenticated completely client-side using 128bit AES-GCM. Limit 5 MB.")), container);
         document.getElementById("removeIfUpload").style.display = "none";
         document.getElementById("uploadbutton").addEventListener('click', beginUpload);
     }
-    /*declare var process: any, require: any;
-    async function initializeNode() {
-        // (broken) running from node
-        const args = process.argv.slice(2);
-        if (args.length !== 1) {
-            console.log("usage: node " + process.argv[1] + " [filename to upload]");
-            process.exit(1);
-        } else {
-            console.log("uploading");
-            const fs = require('fs');
-            if (!fs.existsSync(args[0])) throw args[0] + " does not exist";
-            const data = new Uint8Array(fs.readFileSync(args[0]));
-        }
-    }*/
     document.addEventListener('DOMContentLoaded', () => {
-        /*if (typeof process !== "undefined") {
-            initializeNode();
-        } else */ if (location.hash) {
+        if (location.hash) {
             const [filename, key] = location.hash.substr(1).split("!");
             log("Loading...");
-            container.innerHTML = "<h3>Loading...</h3>";
+            React.render(React.createElement("h3", null, "Loading..."), container);
             Upload.downloadEncrypted(filename, key).then(displayFile);
         }
         else {
