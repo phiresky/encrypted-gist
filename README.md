@@ -1,8 +1,11 @@
 # encrypted-gist
 
+
 Store any type of file by uploading them to GitHub as encrypted text files. (Compatible only with Chrome and Firefox, see [Limitations](#limitations))
 
 The code is fairly simple, 30 lines for the [GitHub API](src/github.ts), 200 lines for [everything else](src/main.tsx). There are no dependencies.
+
+**Update 2018-09: Sadly GitHub no longer allows the creation of gists without login. This means that uploading new files will no longer work**
 
 #### Hosted version:
 
